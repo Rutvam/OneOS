@@ -10,7 +10,7 @@ BUILD_DIR = ./COMPILE
 # Flags de compilation
 NASMFLAGS_BIN = -f bin
 NASMFLAGS_ELF = -f elf32
-CFLAGS        = -m32 -ffreestanding -fno-pic -fno-pie -c
+CFLAGS        = -m32 -ffreestanding -fno-stack-protector -fno-pic -fno-pie -c
 
 # NOUVEAU : On appelle officiellement le linker.ld !
 LDFLAGS       = -m elf_i386 -T linker.ld --oformat binary
@@ -42,7 +42,7 @@ $(TARGET): boot.asm kernel_entry.asm kernel.c IDT.c
 	$(LDC) $(LDFLAGS) $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/IDT.o $(BUILD_DIR)/math.o $(BUILD_DIR)/function.o -o $(BUILD_DIR)/kernel.bin
 
 	# 5. On force la taille
-	truncate -s 8192 $(BUILD_DIR)/kernel.bin
+	truncate -s 32768 $(BUILD_DIR)/kernel.bin
 	
 	# 6. On colle le tout
 	cat $(BUILD_DIR)/boot.bin $(BUILD_DIR)/kernel.bin > $(TARGET)

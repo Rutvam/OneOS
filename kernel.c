@@ -1,105 +1,111 @@
 #include "IDT.h"
 #include "math.h"
 #include "function.h"
+// Une macro qui capture le fichier et la ligne automatiquement
+#define ASSERT_OR_LOG(condition, message) \
+    if (!(condition)) { \
+        kernel_panic(message, __FILE__, __LINE__); \
+    }
+
+void kernel_panic(const char* message, const char* file, int line)
+{
+    // On efface l'écran ou on écrit directement
+    set("\n\033[31m========================================\033[0m\n");
+    set("\033[31m ! KERNEL PANIC ! \033[0m\n");
+    set("Message: %s\n", message);
+    set("Fichier: %s\n", file);
+    // Note: Si ton 'set' ne gère pas le %d pour les entiers, 
+    // tu devras convertir 'line' en chaîne de caractères d'abord.
+    set("Ligne  : %d\n", line); 
+    set("\033[31m========================================\033[0m\n");
+
+    // On arrête totalement le CPU pour plus que ça bouge
+    __asm__ __volatile__("cli"); // Désactive les interruptions
+    while(1) {
+        __asm__ __volatile__("hlt"); // Met le CPU en veille prolongée
+    }
+}
+
 extern void keyboard_handler_asm();
 
 void clear()
 {
 	char* video_memory = (char*) 0xB8000;
 	video_memory[0] = ' ';
-	for (int i = 2; i <= 4000; i = i + 2)
+	for (int i = 2; i < 4000; i = i + 2)
 	{
 		video_memory[i] = ' ';
 		video_memory[i-1] = 0x0F;
 	}
 }
 
-void set(const char* text)
-{
-	char* video_memory = (char*) 0xB8000;
-	int background_color = 0;
-	int text_color = 15;
-	int color = background_color * 16 + text_color * 1;
-	int reset = 0;
-	int j = 0;
-	for (int i = 0; i <= 4000 && text[j] != 0x00; i = i + 2)
-	{
-		if (text[j] == '\033' && text[j+1] == '[' && (text[j+7] == 'm' || text[j+4] == 'm' || text[j+3] == 'm')) {
-			if ('1' <= text[j+3] && text[j+3] <= '8' && text[j+2] == '3')
-			{
-				text_color = text[j+3] - '1';
-			}
-			if ('1' <= text[j+6] && text[j+6] <= '8' && text[j+5] == '3')
-			{
-				text_color = text[j+6] - '1';
-			}
-			if ('1' <= text[j+3] && text[j+3] <= '8' && text[j+2] == '4')
-			{
-				background_color = text[j+3] - '1';
-			}
-			if ('1' <= text[j+6] && text[j+6] <= '8' && text[j+5] == '4')
-			{
-				background_color = text[j+6] - '1';
-			}
-			if (text[j+2] == 0x00) {
-				reset = 1;
-				background_color = 0;
-				text_color = 15;
-			}
-
-			if (background_color != 0 && text_color != 0) {
-				j = j + 8;
-			} else if (background_color != 0 || text_color != 0) {
-				j = j + 5;
-			} else if (reset) {
-				j = j + 4;
-			}
-			continue;
-		} else if (text[j] == '\n') {
-			i = ((i/160)+1)*160;
-			j++;
-			continue;
-		} else if (text[j] == '\t') {
-			i += 4;
-			j++;
-			continue;
-		}
-		color = background_color * 16 + text_color * 1;
-		video_memory[i] = text[j];
-		video_memory[i + 1] = color;
-		j++;
-	}
-}
-
 // Cette fonction sera appelée à chaque fois que tu touches au clavier !
 void keyboard_handler_c() {
-    set("\033[32m[Clavier] Une touche a ete pressee !\033[0m\n");
+    // Étape 1: Lire le scancode pour vider le contrôleur clavier
+    uint8_t scancode;
+    __asm__ __volatile__("inb $0x60, %0" : "=a"(scancode));
 
-    // LIGNE OBLIGATOIRE : On doit dire au contrôleur d'interruptions (le PIC)
-    // qu'on a bien fini de traiter le signal, sinon il bloquera les prochaines touches.
-    // Le port 0x20 reçoit le signal de fin (0x20).
+	// Table de conversion Scancode Set 1 pour disposition QWERTZ Allemande (DE)
+	unsigned char qwertz_german[128] = {
+	    0,   27,  '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 0xE1, '`', '\b', /* 0x00 - 0x0E (0xE1 = ß en CP437) */
+	  '\t', 'q', 'w', 'e', 'r', 't', 'z', 'u', 'i', 'o', 'p', 0x81, '+', '\n',        /* 0x0F - 0x1C (0x81 = ü en CP437) */
+	    0,  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 0x94, 0x84, '^',              /* 0x1D - 0x29 (0x94 = ö, 0x84 = ä) */
+	    0,  '#', 'y', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-',  0,               /* 0x2A - 0x36 */
+	  '*',    0,  ' ',   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,        /* 0x37 - 0x44 */
+	    0,    0,   0,   0,   0,   0,   0,  '7', '8', '9', '-', '4', '5', '6', '+',    /* 0x45 - 0x53 */
+	  '1',  '2', '3', '0', ',',   0,   0,  '<',   0,   0                             /* 0x54 - 0x5D */
+	};
+	if (!(scancode & 0x80)) {
+        // On s'assure que le scancode ne dépasse pas la taille de notre table
+		ASSERT_OR_LOG(scancode < 128, "Scancode de touche inconnu ou trop grand!");
+        if (scancode < 128) {
+            char touche = qwertz_german[scancode];
+
+        	ASSERT_OR_LOG(touche != 0, "La variable `touche` a la valeur 0!");
+            if (touche != 0) {
+            	set("\033[34m[Clavier] Une touche a ete pressee! [%c]\033[0m\n", touche);
+            }
+        }
+    }
+
+    // Étape 2: Ton affichage
+    
+
+    // Étape 3: Dire au PIC que c'est fini
     __asm__ __volatile__("outb %%al, %%dx" : : "a"(0x20), "d"(0x20));
 }
 
+void input(const char* text)
+{
+	set(text);
+	// 2. Configuration matérielle (Une seule fois !)
+	pic_remap();
+	set_idt_gate(33, (uint32_t)(uintptr_t)keyboard_handler_asm);
+	init_idt();
+	
+	set("IDT chargee avec succes.\n");
+
+	// 3. On ouvre les vannes du clavier
+	__asm__ __volatile__("sti");
+
+	set("\033[34mInterruptions activees ! Appuie sur une touche...\033[0m\n");
+}
+
+// Dans kernel.c
 int main()
 {
+    // 1. On prépare l'affichage
     clear();
     set("\033[34mThe Kernel\033[0m\n");
-    
-    // 1. On configure la case 33 (clavier) de l'IDT avec notre code ASM
-    set_idt_gate(33, (uint32_t)keyboard_handler_asm);
-    
-    // 2. On charge l'IDT dans le processeur
-    init_idt();
-    
-    set("IDT chargee avec succes.\n");
 
-    // 3. Par défaut, le processeur ignore les interruptions matérielles.
-    // L'instruction assembleur "sti" (Set Interrupt Flag) lui dit : "Maintenant, écoute le clavier !"
-    __asm__ __volatile__("sti");
+	input("text");
 
-    set("Interruptions activees ! Appuie sur une touche de ton clavier...\n");
+    // 4. Boucle de repos (Le CPU attend sagement ici)
+    while(1)
+    {
+        // On ne fait rien, le CPU tourne à vide et 
+        // l'interruption clavier le réveillera automatiquement.
+    }
 
-    while(1);
     return 0;
 }

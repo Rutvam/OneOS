@@ -2,6 +2,8 @@
 #ifndef IDT_H
 #define IDT_H
 
+
+void pic_remap();
 void set_idt_gate(int n, uint32_t handler_address);
 void init_idt();
 struct IDT_entry {
