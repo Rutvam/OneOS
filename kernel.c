@@ -10,14 +10,14 @@
 void kernel_panic(const char* message, const char* file, int line)
 {
     // On efface l'écran ou on écrit directement
-    set("\n\033[31m========================================\033[0m\n");
-    set("\033[31m ! KERNEL PANIC ! \033[0m\n");
-    set("Message: %s\n", message);
-    set("Fichier: %s\n", file);
+    print("\n\033[31m========================================\033[0m\n");
+    print("\033[31m ! KERNEL PANIC ! \033[0m\n");
+    print("Message: %s\n", message);
+    print("Fichier: %s\n", file);
     // Note: Si ton 'set' ne gère pas le %d pour les entiers, 
     // tu devras convertir 'line' en chaîne de caractères d'abord.
-    set("Ligne  : %d\n", line); 
-    set("\033[31m========================================\033[0m\n");
+    print("Ligne  : %d\n", line); 
+    print("\033[31m========================================\033[0m\n");
 
     // On arrête totalement le CPU pour plus que ça bouge
     __asm__ __volatile__("cli"); // Désactive les interruptions
@@ -63,7 +63,7 @@ void keyboard_handler_c() {
 
         	ASSERT_OR_LOG(touche != 0, "La variable `touche` a la valeur 0!");
             if (touche != 0) {
-            	set("\033[34m[Clavier] Une touche a ete pressee! [%c]\033[0m\n", touche);
+            	print("\033[34m[Clavier] Une touche a ete pressee! [%c]\033[0m\n", touche);
             }
         }
     }
@@ -77,18 +77,18 @@ void keyboard_handler_c() {
 
 void input(const char* text)
 {
-	set(text);
+	print(text);
 	// 2. Configuration matérielle (Une seule fois !)
 	pic_remap();
 	set_idt_gate(33, (uint32_t)(uintptr_t)keyboard_handler_asm);
 	init_idt();
 	
-	set("IDT chargee avec succes.\n");
+	print("IDT chargee avec succes.\n");
 
 	// 3. On ouvre les vannes du clavier
 	__asm__ __volatile__("sti");
 
-	set("\033[34mInterruptions activees ! Appuie sur une touche...\033[0m\n");
+	print("\033[34mInterruptions activees ! Appuie sur une touche...\033[0m\n");
 }
 
 // Dans kernel.c
@@ -96,7 +96,7 @@ int main()
 {
     // 1. On prépare l'affichage
     clear();
-    set("\033[34mThe Kernel\033[0m\n");
+    print("\033[34mThe Kernel\033[0m\n");
 
 	input("text");
 

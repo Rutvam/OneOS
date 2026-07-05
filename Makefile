@@ -42,7 +42,7 @@ $(TARGET): boot.asm kernel_entry.asm kernel.c IDT.c
 	$(LDC) $(LDFLAGS) $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/IDT.o $(BUILD_DIR)/math.o $(BUILD_DIR)/function.o -o $(BUILD_DIR)/kernel.bin
 
 	# 5. On force la taille
-	truncate -s 32768 $(BUILD_DIR)/kernel.bin
+	truncate -s 16384 $(BUILD_DIR)/kernel.bin
 	
 	# 6. On colle le tout
 	cat $(BUILD_DIR)/boot.bin $(BUILD_DIR)/kernel.bin > $(TARGET)

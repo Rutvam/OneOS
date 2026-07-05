@@ -22,7 +22,7 @@ BIOS_print:
         cmp al, 0          
         je .done           
         call BIOS_affichage
-        jmp .loop          
+        jmp .loop
     .done:
         ret
 
@@ -145,8 +145,7 @@ BIOS_attente_clavier:
 
 BIOS_charger_kernel:
     mov ah, 0x02        ; Fonction BIOS : Lire des secteurs
-	call .aff
-    mov al, 64          ; Lire 64 secteurs | 1 secteur = 512o | 64*512 = 32768o
+    mov al, 32          ; Lire 32 secteurs | 1 secteur = 512o | 32*512 = 16384o
     mov ch, 0           ; Cylindre 0
     mov dh, 0           ; Tête 0
     mov cl, 2           ; Secteur 2 (juste après le bootloader)
@@ -164,11 +163,6 @@ BIOS_charger_kernel:
     	call BIOS_print
     	call BIOS_newline
         jmp start.boucle_principale
-    .aff:
-	    mov si, msg
-    	call BIOS_print
-    	call BIOS_newline
-    	ret
 
 ; --- PASSAGE EN MODE PROTÉGÉ (32 bits) ---
 passer_en_mode_protege:
@@ -216,7 +210,6 @@ delet db 0x08, 0x20, 0x08, 0
 clear_commande db "clear", 0 
 shutdown_commande db "shutdown", 0 
 kernel_commande db "kernel", 0 
-msg db "Lecture 64 secteur", 0
 
 ; On place le buffer directement ici sans directive SECTION
 buffer:

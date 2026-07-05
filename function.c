@@ -1,4 +1,4 @@
-#include <stdarg.h>
+ #include <stdarg.h>
 #include "function.h"
 static unsigned long int next_graine = 1;
 
@@ -58,7 +58,7 @@ void itoa(int num, char* str) {
     }
 }
 
-void set(const char* text, ...)
+void print(const char* text, ...)
 {
     char* video_memory = (char*) 0xB8000;
     int background_color = 0;
@@ -131,12 +131,12 @@ void set(const char* text, ...)
                 
                 // Ici, tu affiches le caractère 'c' à l'écran
                 char buffer[2] = {c, '\0'};
-                set(buffer);
+                print(buffer);
                 continue;
             } else if (text[j+1] == 's') {
                 // On extrait une chaîne de caractères (char*)
                 char* s = va_arg(argv, char*);
-                set(s);
+                print(s);
                 continue;
             }else if (text[j+1] == 'd') {
                 int d = va_arg(argv, int);
@@ -150,7 +150,7 @@ void set(const char* text, ...)
                 itoa(d, buffer);
                 
                 // On l'affiche avec ta fonction set
-                set(buffer);
+                print(buffer);
             }
         }
         

@@ -4,6 +4,6 @@
 void seed_random(unsigned int seed);
 int randint(void);
 void itoa(int num, char* str);
-void set(const char* text, ...);
+void print(const char* text, ...);
 
 #endif
