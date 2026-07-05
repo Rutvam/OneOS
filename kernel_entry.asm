@@ -14,8 +14,8 @@ _start:
     mov gs, ax
 
     ; --- INITIALISATION DE LA PILE 32 BITS ---
-    mov ebp, 0x90000
-    mov esp, ebp
+    mov ebp, 0x8F000
+    mov esp, 0x8E000 ; Laisser au moins 4KB pour la pile
 
     ; --- LE GRAND SAUT VERS LE C ---
     call main     ; Saute dans ton code C (kernel.c)
@@ -27,6 +27,7 @@ extern keyboard_handler_c ; On dit que la vraie logique sera écrite en C
 
 keyboard_handler_asm:
     pusha                    ; Sauvegarde tous les registres du processeur (eax, ebx...)
+    cld                      ; Assure direction flag = forward
     call keyboard_handler_c  ; Appelle notre fonction C
     popa                     ; Restaure les registres comme ils étaient avant
     iret                     ; Instruction spéciale pour quitter une interruption
