@@ -86,7 +86,7 @@ void input(const char* text)
 	print("IDT chargee avec succes.\n");
 
 	// 3. On ouvre les vannes du clavier
-	__asm__ __volatile__("sti");
+	// __asm__ __volatile__("sti"); Temporairement desactiver
 
 	print("\033[34mInterruptions activees ! Appuie sur une touche...\033[0m\n");
 }
