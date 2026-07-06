@@ -23,7 +23,7 @@ TARGET = $(BUILD_DIR)/os-image.bin
 all: $(TARGET)
 	$(EMULATOR) -drive format=raw,file=$(TARGET)
 
-$(TARGET): boot.asm kernel_entry.asm kernel.c IDT.c
+$(TARGET): boot.asm kernel_entry.asm main.c IDT.c
 	@mkdir -p $(BUILD_DIR)
 	
 	# 1. Compile le Bootloader
@@ -33,13 +33,13 @@ $(TARGET): boot.asm kernel_entry.asm kernel.c IDT.c
 	$(NASMC) $(NASMFLAGS_ELF) kernel_entry.asm -o $(BUILD_DIR)/kernel_entry.o
 	
 	# 3. Compile le Kernel C et le module IDT C
-	$(CC) $(CFLAGS) kernel.c -o $(BUILD_DIR)/kernel.o
+	$(CC) $(CFLAGS) main.c -o $(BUILD_DIR)/main.o
 	$(CC) $(CFLAGS) IDT.c -o $(BUILD_DIR)/IDT.o
 	$(CC) $(CFLAGS) math.c -o $(BUILD_DIR)/math.o
 	$(CC) $(CFLAGS) function.c -o $(BUILD_DIR)/function.o
 	
 	# 4. Fusionne TOUS les fichiers objets ensemble (On a ajouté IDT.o ici)
-	$(LDC) $(LDFLAGS) $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/IDT.o $(BUILD_DIR)/math.o $(BUILD_DIR)/function.o -o $(BUILD_DIR)/kernel.bin
+	$(LDC) $(LDFLAGS) $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/main.o $(BUILD_DIR)/IDT.o $(BUILD_DIR)/math.o $(BUILD_DIR)/function.o -o $(BUILD_DIR)/kernel.bin
 
 	# 5. On force la taille
 	truncate -s 16384 $(BUILD_DIR)/kernel.bin

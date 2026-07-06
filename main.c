@@ -46,25 +46,30 @@ void keyboard_handler_c() {
     __asm__ __volatile__("inb $0x60, %0" : "=a"(scancode));
 
 	// Table de conversion Scancode Set 1 pour disposition QWERTZ Allemande (DE)
-	unsigned char qwertz_german[128] = {
-	    0,   27,  '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 0xE1, '`', '\b', /* 0x00 - 0x0E (0xE1 = ß en CP437) */
-	  '\t', 'q', 'w', 'e', 'r', 't', 'z', 'u', 'i', 'o', 'p', 0x81, '+', '\n',        /* 0x0F - 0x1C (0x81 = ü en CP437) */
-	    0,  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 0x94, 0x84, '^',              /* 0x1D - 0x29 (0x94 = ö, 0x84 = ä) */
-	    0,  '#', 'y', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-',  0,               /* 0x2A - 0x36 */
-	  '*',    0,  ' ',   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,        /* 0x37 - 0x44 */
-	    0,    0,   0,   0,   0,   0,   0,  '7', '8', '9', '-', '4', '5', '6', '+',    /* 0x45 - 0x53 */
-	  '1',  '2', '3', '0', ',',   0,   0,  '<',   0,   0                             /* 0x54 - 0x5D */
+	char qwertz_german[130] = {
+	    0,   27,  '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 0xE1, '`', '\b', // 0x00 - 0x0E (0xE1 = ß en CP437)
+	  '\t', 'q', 'w', 'e', 'r', 't', 'z', 'u', 'i', 'o', 'p', 0x81, '+', '\n',        // 0x0F - 0x1C (0x81 = ü en CP437)
+	    0,  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 0x94, 0x84, '^',              // 0x1D - 0x29 (0x94 = ö, 0x84 = ä)
+	    0,  '#', 'y', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-',  0,               // 0x2A - 0x36
+	  '*',    0,  ' ',   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,        // 0x37 - 0x44
+	    0,    0,   0,   0,   0,   0,   0,  '7', '8', '9', '-', '4', '5', '6', '+',    // 0x45 - 0x53
+	  '1',  '2', '3', '0', ',',   0,   0,  '<',   0,   0                             // 0x54 - 0x5D 
 	};
+	print("\033[32mTouche presser\033[0m");
 	if (!(scancode & 0x80)) {
+		print("\033[32mLa touche n'est pas delet\n\033[0m");
         // On s'assure que le scancode ne dépasse pas la taille de notre table
-		ASSERT_OR_LOG(scancode < 128, "Scancode de touche inconnu ou trop grand!");
-        if (scancode < 128) {
+		ASSERT_OR_LOG(scancode < 130, "\033[32mScancode de touche inconnu ou trop grand!\033[0m");
+        if (scancode < 130) {
+        	print("\033[32mLa touche est plus petit que 130\n\033[0m");
             char touche = qwertz_german[scancode];
 
         	ASSERT_OR_LOG(touche != 0, "La variable `touche` a la valeur 0!");
             if (touche != 0) {
             	print("\033[34m[Clavier] Une touche a ete pressee! [%c]\033[0m\n", touche);
             }
+        } else {
+        	print("%c", scancode);
         }
     }
 
@@ -86,9 +91,9 @@ void input(const char* text)
 	print("IDT chargee avec succes.\n");
 
 	// 3. On ouvre les vannes du clavier
-	// __asm__ __volatile__("sti"); Temporairement desactiver
+	__asm__ __volatile__("sti");
 
-	print("\033[34mInterruptions activees ! Appuie sur une touche...\033[0m\n");
+	print("\033[32mInterruptions activees ! Appuie sur une touche...\033[0m\n");
 }
 
 // Dans kernel.c
@@ -96,9 +101,12 @@ int main()
 {
     // 1. On prépare l'affichage
     clear();
-    print("\033[34mThe Kernel\033[0m\n");
+    seed_random(7);
+    int value = randint()%5;
+    print("\033[31mThe Kernel\033[0m\n");
+    print("\033[32mrand variable: %d\033[0m", value);
 
-	input("text");
+	input("\033[32mtext\033[0m");
 
     // 4. Boucle de repos (Le CPU attend sagement ici)
     while(1)
