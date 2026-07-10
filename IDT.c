@@ -25,8 +25,8 @@ void pic_remap() {
 }
 
 // 1. On instancie officiellement nos variables globales ici (sans struct complète)
-struct IDT_entry idt[256];
-struct IDTR idtr;
+// struct IDT_entry idt[256];
+// struct IDTR idtr;
 
 // 2. Ta fonction pour configurer une case de l'IDT
 void set_idt_gate(int n, uint32_t handler_address) {
