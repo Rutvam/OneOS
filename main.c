@@ -42,6 +42,7 @@ void clear()
 
 // Cette fonction sera appelée à chaque fois que tu touches au clavier !
 void keyboard_handler_c() {
+    *(volatile char*)0xB8000 = 'X';
     // Étape 1: Lire le scancode pour vider le contrôleur clavier
     uint8_t scancode;
     __asm__ __volatile__("inb $0x60, %0" : "=a"(scancode));
