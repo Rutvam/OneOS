@@ -57,25 +57,21 @@ void keyboard_handler_c() {
 	   0,   0,   0,   0,   0,   0,   0, '7', '8', '9', '-',  '4',  '5',  '6', '+',    // 0x45 - 0x53
 	 '1', '2', '3', '0', ',',   0,   0, '<',   0,   0                             // 0x54 - 0x5D 
 	};
-	print("\033[32mTouche presser\033[0m");
+	// print("\033[32mTouche presser\033[0m");
 	if (!(scancode & 0x80)) {
-		print("\033[32mLa touche n'est pas delet\n\033[0m");
+		// print("\033[32mLa touche n'est pas delet\n\033[0m");
         // On s'assure que le scancode ne dépasse pas la taille de notre table
 		ASSERT_OR_LOG(scancode < 130, "\033[32mScancode de touche inconnu ou trop grand!\033[0m");
         if (scancode < 130) {
-        	print("\033[32mLa touche est plus petit que 130\n\033[0m");
+        	// print("\033[32mLa touche est plus petit que 130\n\033[0m");
             char touche = qwertz_german[scancode];
 
         	ASSERT_OR_LOG(touche != 0, "La variable `touche` a la valeur 0!");
             if (touche != 0) {
-            	print("\033[34m[Clavier] Une touche a ete pressee! [%c]\033[0m\n", touche);
+            	// print("\033[34m[Clavier] Une touche a ete pressee! [%c]\033[0m\n", touche);
             }
             if (touche == 'q') {              // par ex. appuyer sur 'q'
-                __asm__ __volatile__(
-                "movb $0x00, %al\n"
-                "movw $0xF4, %dx\n"
-                "outb %al, %dx\n"
-                );
+                __asm__ __volatile__("movb $0x00, %al\n" "movw $0xF4, %dx\n" "outb %al, %dx\n");
             }
 
         } else {
@@ -88,6 +84,12 @@ void keyboard_handler_c() {
 
     // Étape 3: Dire au PIC que c'est fini
     __asm__ __volatile__("outb %%al, %%dx" : : "a"(0x20), "d"(0x20));
+}
+
+
+{
+	print(text);
+
 }
 
 // Dans kernel.c
