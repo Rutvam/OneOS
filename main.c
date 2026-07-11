@@ -7,6 +7,7 @@
         kernel_panic(message, __FILE__, __LINE__); \
     }
 
+
 void kernel_panic(const char* message, const char* file, int line)
 {
     // On efface l'écran ou on écrit directement
@@ -43,10 +44,10 @@ void clear()
 void keyboard_handler_c() {
     // Étape 1: Lire le scancode pour vider le contrôleur clavier
     uint8_t scancode;
-    // __asm__ __volatile__("inb $0x60, %0" : "=a"(scancode));
+    __asm__ __volatile__("inb $0x60, %0" : "=a"(scancode));
 
 	// Table de conversion Scancode Set 1 pour disposition QWERTZ Allemande (DE)
-	char qwertz_german[130] = {
+	unsigned char qwertz_german[130] = {
 	   0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9',  '0', 0xE1,   '`', '\b', // 0x00 - 0x0E (0xE1 = ß en CP437) 15
 	'\t', 'q', 'w', 'e', 'r', 't', 'z', 'u', 'i', 'o', 'p', 0x81,  '+',  '\n',        // 0x0F - 0x1C (0x81 = ü en CP437) 14
 	   0, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l',0x94, 0x84,  '^',              // 0x1D - 0x29 (0x94 = ö, 0x84 = ä) 13
@@ -92,7 +93,6 @@ void input(const char* text)
 
 	// 3. On ouvre les vannes du clavier
 	__asm__ __volatile__("sti");
-
 	print("\033[32mInterruptions activees ! Appuie sur une touche...\033[0m\n");
 }
 

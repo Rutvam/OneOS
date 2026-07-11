@@ -19,7 +19,7 @@ struct IDTR {
     uint32_t base;             // Adresse mémoire du début de notre tableau idt
 } __attribute__((packed));
 // Notre tableau de 256 interruptions
-extern struct IDT_entry idt[256];
 extern struct IDTR idtr;
+extern struct IDT_entry idt[256];
 
 #endif

@@ -1,6 +1,9 @@
 #include <stdint.h>
 #include "IDT.h"
 
+struct IDTR idtr;
+struct IDT_entry idt[256];
+
 void pic_remap() {
     // Initialisation du PIC Maître (port 0x20) et Esclave (port 0xA0)
     __asm__ __volatile__("outb %%al, %%dx" : : "a"(0x11), "d"(0x20));
@@ -45,3 +48,4 @@ void init_idt() {
     // L'instruction assembleur magique
     __asm__ __volatile__("lidt (%0)" : : "r" (&idtr));
 }
+
