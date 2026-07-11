@@ -10,15 +10,16 @@
 
 void kernel_panic(const char* message, const char* file, int line)
 {
+    int cursor = 0;
     // On efface l'écran ou on écrit directement
-    print("\n\033[31m========================================\033[0m\n");
-    print("\033[31m ! KERNEL PANIC ! \033[0m\n");
-    print("Message: %s\n", message);
-    print("Fichier: %s\n", file);
+    print("\n\033[31m========================================\033[0m\n", &cursor);
+    print("\033[31m ! KERNEL PANIC ! \033[0m\n", &cursor);
+    // print("Message: %s\n", &cursor, message);
+    // print("Fichier: %s\n", &cursor, file);
     // Note: Si ton 'set' ne gère pas le %d pour les entiers, 
     // tu devras convertir 'line' en chaîne de caractères d'abord.
-    print("Ligne  : %d\n", line); 
-    print("\033[31m========================================\033[0m\n");
+    // print("Ligne  : %d\n", &cursor, line); 
+    print("\033[31m========================================\033[0m\n", &cursor);
 
     // On arrête totalement le CPU pour plus que ça bouge
     __asm__ __volatile__("cli"); // Désactive les interruptions
@@ -50,15 +51,12 @@ static const unsigned char qwertz_german[130] = {
  '1', '2', '3', '0', ',',   0,   0, '<',   0,   0                             // 0x54 - 0x5D 
 };;
 
+volatile uint8_t last_scancode = 0;
+
 void keyboard_handler_c() {
     uint8_t scancode;
     __asm__ __volatile__("inb $0x60, %0" : "=a"(scancode));
-
-    if (!(scancode & 0x80) && scancode < 130) {
-        char touche = qwertz_german[scancode];
-        // sans ASSERT_OR_LOG pour l’instant
-    }
-
+    last_scancode = scancode;
     __asm__ __volatile__("outb %%al, %%dx" : : "a"(0x20), "d"(0x20));
 }
 
@@ -66,29 +64,33 @@ void keyboard_handler_c() {
 // Dans kernel.c
 int main()
 {
+    int cursor = 0;
     // 1. On prépare l'affichage
     clear();
     seed_random(7);
     int value = randint()%5;
-    print("\033[38mThe Kernel\033[0m\n");
-    print("\033[36mrand variable: %d\033[0m", value);
+    print("The Kernel\n", &cursor);
 
     // 2. Configuration matérielle (Une seule fois !)
     pic_remap();
     set_idt_gate(33, (uint32_t)(uintptr_t)keyboard_handler_asm);
     init_idt();
     
-    print("IDT chargee avec succes.\n");
+    print("IDT chargee avec succes.\n", &cursor);
 
     // 3. On ouvre les vannes du clavier
     __asm__ __volatile__("sti");
-    print("\033[32mInterruptions activees ! Appuie sur une touche...\033[0m\n");
+    print("Interruptions activees!\n", &cursor);
 
     // 4. Boucle de repos (Le CPU attend sagement ici)
     while(1)
     {
-        // On ne fait rien, le CPU tourne à vide et 
-        // l'interruption clavier le réveillera automatiquement.
+        if (last_scancode) {
+            char c = qwertz_german[last_scancode];
+            print("Touche: ", &cursor);
+            // ici tu pourras ajouter un petit print de caractère plus tard
+            last_scancode = 0;
+        }
     }
 
     return 0;

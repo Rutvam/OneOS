@@ -57,8 +57,8 @@ void itoa(int num, char* str) {
         end--;
     }
 }
-
-void print(const char* text, ...)
+/*
+void print(const char* text, int *cursor, ...)
 {
     char* video_memory = (char*) 0xB8000;
     int background_color = 0;
@@ -75,11 +75,11 @@ void print(const char* text, ...)
     // [Ton code de traitement ici]
 
 
-    for (int i = 0; i <= 4000 && text[j] != 0x00; )
+    while ((*cursor) <= 4000 && text[j] != 0x00)
     {
         // Si la case n'est pas vide, on passe à la ligne suivante
-        if (video_memory[i] != ' ') {
-            i = ((i / 160) + 1) * 160;
+        if (video_memory[*cursor] != ' ') {
+            (*cursor)++;
             continue; // On "continue" sans faire i += 2 pour ne pas sauter la première case !
         }
 
@@ -113,16 +113,16 @@ void print(const char* text, ...)
             continue;
         } 
         else if (text[j] == '\n') {
-            i = ((i / 160) + 1) * 160;
+            (*cursor) = (((*cursor) / 160) + 1) * 160;
             j++;
             continue;
         } 
         else if (text[j] == '\t') {
-            i += 8; // Un tab vaut généralement 4 ou 8 espaces (ici 4 cases de 2 octets)
+            (*cursor) += 8; // Un tab vaut généralement 4 ou 8 espaces (ici 4 cases de 2 octets)
             j++;
             continue;
         } else if (text[j] == '%') {
-            i++; // On passe au caractère suivant pour voir le type (%c, %s, etc.)
+            (*cursor)++; // On passe au caractère suivant pour voir le type (%c, %s, etc.)
 
             if (text[j+1] == 'c') {
                 // va_arg(args, TYPE) extrait le prochain argument.
@@ -131,12 +131,16 @@ void print(const char* text, ...)
                 
                 // Ici, tu affiches le caractère 'c' à l'écran
                 char buffer[2] = {c, '\0'};
-                print(buffer);
+                int temp_cursor = *cursor;
+                print(buffer, &temp_cursor);
+                *cursor = temp_cursor;
                 continue;
             } else if (text[j+1] == 's') {
                 // On extrait une chaîne de caractères (char*)
                 char* s = va_arg(argv, char*);
-                print(s);
+                int temp_cursor = *cursor;
+                print(s, &temp_cursor);
+                *cursor = temp_cursor;
                 continue;
             }else if (text[j+1] == 'd') {
                 int d = va_arg(argv, int);
@@ -150,19 +154,41 @@ void print(const char* text, ...)
                 itoa(d, buffer);
                 
                 // On l'affiche avec ta fonction set
-                print(buffer);
+                int temp_cursor = *cursor;
+                print(buffer, &temp_cursor);
+                *cursor = temp_cursor;
             }
         }
         
 
         // Écriture du caractère à l'écran
         color = background_color * 16 + text_color;
-        video_memory[i] = text[j];
-        video_memory[i + 1] = color;
+        video_memory[(*cursor)] = text[j];
+        video_memory[(*cursor) + 1] = color;
         
-        i += 2;
+        (*cursor) += 2;
         j++;
         // 3. Nettoyage obligatoire à la fin
         }
     va_end(argv);
+}
+*/
+void print(const char* text, int *cursor)
+{
+    char* video = (char*)0xB8000;
+    int j = 0;
+
+    while (text[j] != 0 && *cursor < 4000)
+    {
+        if (text[j] == '\n') {
+            *cursor = ((*cursor) / 160 + 1) * 160;
+            j++;
+            continue;
+        }
+
+        video[*cursor] = text[j];
+        video[*cursor + 1] = 0x0F;   // blanc sur noir
+        *cursor += 2;
+        j++;
+    }
 }
