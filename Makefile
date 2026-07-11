@@ -31,7 +31,7 @@ test: $(TARGET)
 	$(EMULATOR) -drive format=raw,file=$(TARGET)
 
 test-TUI: $(TARGET)
-	$(EMULATOR) -drive curses format=raw,file=$(TARGET)
+	$(EMULATOR) -display curses -drive format=raw,file=$(TARGET)
 
 send: $(TARGET)
 	scp -P 2222 $(TARGET) rutvam55@10.142.207.24:/home/rutvam55/CODE/OneOS/compile/os-image.bin
