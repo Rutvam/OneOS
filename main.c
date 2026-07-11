@@ -90,21 +90,6 @@ void keyboard_handler_c() {
     __asm__ __volatile__("outb %%al, %%dx" : : "a"(0x20), "d"(0x20));
 }
 
-void input(const char* text)
-{
-	print(text);
-	// 2. Configuration matérielle (Une seule fois !)
-	pic_remap();
-	set_idt_gate(33, (uint32_t)(uintptr_t)keyboard_handler_asm);
-	init_idt();
-	
-	print("IDT chargee avec succes.\n");
-
-	// 3. On ouvre les vannes du clavier
-	__asm__ __volatile__("sti");
-	print("\033[32mInterruptions activees ! Appuie sur une touche...\033[0m\n");
-}
-
 // Dans kernel.c
 int main()
 {
@@ -115,7 +100,16 @@ int main()
     print("\033[38mThe Kernel\033[0m\n");
     print("\033[36mrand variable: %d\033[0m", value);
 
-	input("\033[35mtext\033[0m");
+    // 2. Configuration matérielle (Une seule fois !)
+    pic_remap();
+    set_idt_gate(33, (uint32_t)(uintptr_t)keyboard_handler_asm);
+    init_idt();
+    
+    print("IDT chargee avec succes.\n");
+
+    // 3. On ouvre les vannes du clavier
+    __asm__ __volatile__("sti");
+    print("\033[32mInterruptions activees ! Appuie sur une touche...\033[0m\n");
 
     // 4. Boucle de repos (Le CPU attend sagement ici)
     while(1)
