@@ -69,6 +69,14 @@ void keyboard_handler_c() {
             if (touche != 0) {
             	print("\033[34m[Clavier] Une touche a ete pressee! [%c]\033[0m\n", touche);
             }
+            if (touche == 'q') {              // par ex. appuyer sur 'q'
+                __asm__ __volatile__(
+                "movb $0x00, %al\n"
+                "movw $0xF4, %dx\n"
+                "outb %al, %dx\n"
+                );
+            }
+
         } else {
         	print("%c", scancode);
         }
@@ -103,10 +111,10 @@ int main()
     clear();
     seed_random(7);
     int value = randint()%5;
-    print("\033[37mThe Kernel\033[0m\n");
-    print("\033[39mrand variable: %d\033[0m", value);
+    print("\033[38mThe Kernel\033[0m\n");
+    print("\033[36mrand variable: %d\033[0m", value);
 
-	input("\033[36mtext\033[0m");
+	input("\033[35mtext\033[0m");
 
     // 4. Boucle de repos (Le CPU attend sagement ici)
     while(1)

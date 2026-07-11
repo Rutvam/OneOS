@@ -30,6 +30,15 @@ compile: $(TARGET)
 test: $(TARGET)
 	$(EMULATOR) -drive format=raw,file=$(TARGET)
 
+test-TUI: $(TARGET)
+	$(EMULATOR) -drive curses format=raw,file=$(TARGET)
+
+send: $(TARGET)
+	scp -P 2222 $(TARGET) rutvam55@10.142.207.24:/home/rutvam55/CODE/OneOS/compile/os-image.bin
+
+run-lg:
+	ssh -p 2222 rutvam55@10.142.207.24 "qemu-system-x86_64 -drive format=raw,file=/home/rutvam55/CODE/OneOS/compile/os-image.bin"
+
 # Construction de l'image
 $(TARGET): boot.asm kernel_entry.asm main.c IDT.c
 	@mkdir -p $(BUILD_DIR)
