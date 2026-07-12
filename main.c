@@ -99,22 +99,30 @@ int main()
 			print("\n", &cursor);
 		}
 	}*/
-    while(1)
+    while (1)
     {
         if (last_scancode) {
             uint8_t sc = last_scancode;
             last_scancode = 0;
-
-            if (!(sc & 0x80) && sc < 130) {   // ignore les relâchements et les scancodes hors table
-                char c = qwertz_german[sc];
-                if (c != 0)
-                {                 // ignore les entrées vides de la table
-                    char buffer[2] = { c, 0x00 };
-                    print(buffer, &cursor);
-                }
-            }
+    
+            // Affiche le scancode brut en hex
+            print("SC: ", &cursor);
+            char hex[3] = {
+                "0123456789ABCDEF"[sc >> 4],
+                "0123456789ABCDEF"[sc & 0xF],
+                0
+            };
+            print(hex, &cursor);
+            print("  C: ", &cursor);
+    
+            // Essaie de mapper vers un caractère
+            char c = qwertz_german[sc];
+            char buf[2] = { c ? c : '?', 0 };
+            print(buf, &cursor);
+            print("\n", &cursor);
         }
     }
+
 
     return 0;
 }
