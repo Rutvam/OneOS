@@ -70,7 +70,7 @@ int main()
     clear();
     seed_random(7);
     int value = randint()%5;
-    print("The Kernel v0.2.3\n", &cursor);
+    print("The Kernel v0.2.4\n", &cursor);
 
     // 2. Configuration matérielle (Une seule fois !)
     pic_remap();
@@ -106,7 +106,7 @@ int main()
                 last_scancode = 0;
                 if (sc & 0x80)
                 {
-                    continue
+                    continue;
                 }
 
                 // Essaie de mapper vers un caractère
