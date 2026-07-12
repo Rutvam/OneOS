@@ -41,7 +41,7 @@ void clear()
 	}
 }
 
-static const unsigned char qwertz_german[130] = {
+static const unsigned char qwertz_german[256] = {
    0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9',  '0', 0xE1,   '`', '\b', // 0x00 - 0x0E (0xE1 = ß en CP437) 15
 '\t', 'q', 'w', 'e', 'r', 't', 'z', 'u', 'i', 'o', 'p', 0x81,  '+',  '\n',        // 0x0F - 0x1C (0x81 = ü en CP437) 14
    0, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l',0x94, 0x84,  '^',              // 0x1D - 0x29 (0x94 = ö, 0x84 = ä) 13
@@ -64,6 +64,7 @@ void keyboard_handler_c() {
 // Dans kernel.c
 int main()
 {
+    char* video_memory = (char*) 0xB8000;
     int cursor = 0;
     // 1. On prépare l'affichage
     clear();
@@ -83,29 +84,29 @@ int main()
     print("Interruptions activees!\n", &cursor);
 
     // 4. Boucle de repos (Le CPU attend sagement ici)
-	/*while(1)
-	{
-        if (last_scancode) {
-    	    uint8_t sc = last_scancode;
-            last_scancode = 0;
-            
-            print("SC: ", &cursor);
-            char hex[3] = {
-            	"0123456789ABCDEF"[sc >> 4],
-            	"0123456789ABCDEF"[sc & 0xF],
-            	0
-            };
-			print(hex, &cursor);
-			print("\n", &cursor);
-		}
-	}*/
     while (1)
     {
         if (last_scancode) {
+            if (cursor >= 3999)
+            {
+                for (int k = 160; k <= 3999; k++)
+                {
+                    video_memory[k-160] = video_memory[k];
+                }
+
+                for (int k = 3840; k < 3999; k += 2)
+                {
+                    video_memory[k] = ' ';
+                    video_memory[k+1] = 0x0F;
+                }
+
+                cursor = 3840;
+            }
             uint8_t sc = last_scancode;
             last_scancode = 0;
     
             // Affiche le scancode brut en hex
+            video_memory[cursor] = 'S';
             print("SC: ", &cursor);
             char hex[3] = {
                 "0123456789ABCDEF"[sc >> 4],
@@ -117,9 +118,9 @@ int main()
     
             // Essaie de mapper vers un caractère
             char c = qwertz_german[sc];
-            char buf[2] = { c ? c : '?', 0 };
-            print(buf, &cursor);
-            print("\n", &cursor);
+            video_memory[cursor] = c;
+            video_memory[cursor+1] = 0x0F;
+            cursor += 2;
         }
     }
 
