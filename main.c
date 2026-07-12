@@ -70,7 +70,7 @@ int main()
     clear();
     seed_random(7);
     int value = randint()%5;
-    print("The Kernel\n", &cursor);
+    print("The Kernel v0.2.3\n", &cursor);
 
     // 2. Configuration matérielle (Une seule fois !)
     pic_remap();
@@ -104,18 +104,7 @@ int main()
             }
             uint8_t sc = last_scancode;
             last_scancode = 0;
-    
-            // Affiche le scancode brut en hex
-            video_memory[cursor] = 'S';
-            print("SC: ", &cursor);
-            char hex[3] = {
-                "0123456789ABCDEF"[sc >> 4],
-                "0123456789ABCDEF"[sc & 0xF],
-                0
-            };
-            print(hex, &cursor);
-            print("  C: ", &cursor);
-    
+
             // Essaie de mapper vers un caractère
             char c = qwertz_german[sc];
             video_memory[cursor] = c;
