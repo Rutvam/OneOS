@@ -214,7 +214,7 @@ delet db 0x08, 0x20, 0x08, 0
 clear_commande db "clear", 0 
 shutdown_commande db "shutdown", 0 
 kernel_commande db "kernel", 0 
-kernel_v db "0.2.4", 0
+kernel_v db "0.2.5", 0
 boot_v db "0.6.1", 0
 
 ; On place le buffer directement ici sans directive SECTION

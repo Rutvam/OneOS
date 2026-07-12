@@ -70,7 +70,7 @@ int main()
     clear();
     seed_random(7);
     int value = randint()%5;
-    print("The Kernel v0.2.4\n", &cursor);
+    print("The Kernel v0.2.5\n", &cursor);
 
     // 2. Configuration matérielle (Une seule fois !)
     pic_remap();
@@ -87,9 +87,9 @@ int main()
     while (1)
     {
         if (last_scancode) {
-            if (cursor >= 3999)
+            if (cursor > 4000)
             {
-                for (int k = 160; k <= 3999; k++)
+                for (int k = 160; k < 4000; k++)
                 {
                     video_memory[k-160] = video_memory[k];
                 }
@@ -104,6 +104,10 @@ int main()
             } else {
                 uint8_t sc = last_scancode;
                 last_scancode = 0;
+                if (sc > 127)
+                {
+                    continue;
+                }
                 if (sc & 0x80)
                 {
                     continue;

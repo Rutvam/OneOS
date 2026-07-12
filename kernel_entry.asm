@@ -26,8 +26,26 @@ global keyboard_handler_asm
 extern keyboard_handler_c ; On dit que la vraie logique sera écrite en C
 
 keyboard_handler_asm:
-    pusha                    ; Sauvegarde tous les registres du processeur (eax, ebx...)
-    cld                      ; Assure direction flag = forward
-    call keyboard_handler_c  ; Appelle notre fonction C
-    popa                     ; Restaure les registres comme ils étaient avant
-    iret                     ; Instruction spéciale pour quitter une interruption
+    push ds
+    push es
+    push fs
+    push gs
+
+    pusha
+    cld
+
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+
+    call keyboard_handler_c
+
+    popa
+
+    pop gs
+    pop fs
+    pop es
+    pop ds
+
+    iret
+
