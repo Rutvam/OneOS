@@ -86,11 +86,17 @@ int main()
     while(1)
     {
         if (last_scancode) {
-            char c = qwertz_german[last_scancode];
-            char buffer[2] = {c, 0x00};
-            print(buffer, &cursor);
-            // ici tu pourras ajouter un petit print de caractère plus tard
+            uint8_t sc = last_scancode;
             last_scancode = 0;
+
+            if (!(sc & 0x80) && sc < 130) {   // ignore les relâchements et les scancodes hors table
+                char c = qwertz_german[sc];
+                if (c != 0)
+                {                 // ignore les entrées vides de la table
+                    char buffer[2] = { c, 0x00 };
+                    print(buffer, &cursor);
+                }
+            }
         }
     }
 
