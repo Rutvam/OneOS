@@ -191,14 +191,14 @@ void print(const char* text, int *cursor)
         *cursor += 2;
         j++;
         
-        if (*cursor >= 4000)
+        if (*cursor >= 3999)
         {
-        	for (int k = 160; k <= 4000; k++)
+        	for (int k = 160; k <= 3999; k++)
         	{
         		video[k-160] = video[k];
         	}
 
-        	for (int k = 3840; k < 4000; k += 2)
+        	for (int k = 3840; k < 3999; k += 2)
         	{
         		video[k] = ' ';
         		video[k+1] = 0x0F;
