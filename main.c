@@ -87,7 +87,8 @@ int main()
     {
         if (last_scancode) {
             char c = qwertz_german[last_scancode];
-            print("Touche: ", &cursor);
+            char buffer[2] = {c, 0x00};
+            print(buffer, &cursor);
             // ici tu pourras ajouter un petit print de caractère plus tard
             last_scancode = 0;
         }
