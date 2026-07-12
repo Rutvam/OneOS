@@ -83,6 +83,22 @@ int main()
     print("Interruptions activees!\n", &cursor);
 
     // 4. Boucle de repos (Le CPU attend sagement ici)
+	/*while(1)
+	{
+        if (last_scancode) {
+    	    uint8_t sc = last_scancode;
+            last_scancode = 0;
+            
+            print("SC: ", &cursor);
+            char hex[3] = {
+            	"0123456789ABCDEF"[sc >> 4],
+            	"0123456789ABCDEF"[sc & 0xF],
+            	0
+            };
+			print(hex, &cursor);
+			print("\n", &cursor);
+		}
+	}*/
     while(1)
     {
         if (last_scancode) {

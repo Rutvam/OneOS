@@ -1,4 +1,4 @@
- #include <stdarg.h>
+#include <stdarg.h>
 #include "function.h"
 static unsigned long int next_graine = 1;
 
@@ -190,5 +190,21 @@ void print(const char* text, int *cursor)
         video[*cursor + 1] = 0x0F;   // blanc sur noir
         *cursor += 2;
         j++;
-    }
+        
+        if (*cursor >= 4000)
+        {
+        	for (int k = 160; k <= 4000; k++)
+        	{
+        		video[k-160] = video[k];
+        	}
+
+        	for (int k = 3840; k < 4000; k += 2)
+        	{
+        		video[k] = ' ';
+        		video[k+1] = 0x0F;
+        	}
+
+        	*cursor = 3840;
+		}
+	}
 }
