@@ -1,3 +1,4 @@
+; Debut kernel_enty.asm
 [bits 32]
 section .text
 global _start     ; Rend le point d'entrée visible pour ld !
@@ -17,6 +18,10 @@ _start:
     mov ebp, 0x8F000
     mov esp, 0x8E000 ; Laisser au moins 4KB pour la pile
 
+    mov byte [kernel_vBig], 0x3 ; 3
+    mov byte [kernel_vMid], 0x2 ; 2
+    mov byte [kernel_vLit], 0xC ;12
+
     ; --- LE GRAND SAUT VERS LE C ---
     call main     ; Saute dans ton code C (kernel.c)
     jmp $         ; Sécurité si le C s'arrête
@@ -24,6 +29,9 @@ _start:
 ; --- GESTIONNAIRE D'INTERRUPTION POUR LE CLAVIER ---
 global keyboard_handler_asm
 extern keyboard_handler_c ; On dit que la vraie logique sera écrite en C
+extern kernel_vLit
+extern kernel_vMid
+extern kernel_vBig
 
 keyboard_handler_asm:
     push ds
@@ -48,4 +56,4 @@ keyboard_handler_asm:
     pop ds
 
     iret
-
+; Fin kernel_enty.asm

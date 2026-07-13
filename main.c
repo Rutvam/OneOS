@@ -1,4 +1,6 @@
+// Debut main.c
 #include "./core/idt/IDT.h"
+#include "./core/value/global_value.h"
 #include "./core/function/math.h"
 #include "./core/function/function.h"
 // Une macro qui capture le fichier et la ligne automatiquement
@@ -12,14 +14,14 @@ void kernel_panic(const char* message, const char* file, int line)
 {
     int cursor = 0;
     // On efface l'écran ou on écrit directement
-    print("\n\033[31m========================================\033[0m\n", &cursor);
-    print("\033[31m ! KERNEL PANIC ! \033[0m\n", &cursor);
+    print("\n\033[31m========================================\033[0m\n");
+    print("\033[31m ! KERNEL PANIC ! \033[0m\n");
     // print("Message: %s\n", &cursor, message);
     // print("Fichier: %s\n", &cursor, file);
     // Note: Si ton 'set' ne gère pas le %d pour les entiers, 
     // tu devras convertir 'line' en chaîne de caractères d'abord.
     // print("Ligne  : %d\n", &cursor, line); 
-    print("\033[31m========================================\033[0m\n", &cursor);
+    print("\033[31m========================================\033[0m\n");
 
     // On arrête totalement le CPU pour plus que ça bouge
     __asm__ __volatile__("cli"); // Désactive les interruptions
@@ -78,14 +80,20 @@ void keyboard_handler_c() {
 // Dans kernel.c
 int main()
 {
+    char vBig[3] = "00";
+    char vMid[3] = "00";
+    char vLit[3] = "00";
+    itoa(kernel_vBig, vBig);
+    itoa(kernel_vMid, vMid);
+    itoa(kernel_vLit, vLit);
+    const char PROMPT[25] = {'T', 'h', 'e', ' ', 'K', 'e', 'r', 'n', 'e', 'l', ' ', 'v', vBig[0], vBig[1], '.', vMid[0], vMid[1], '.', vLit[0], vLit[1], ' ', '>', '>', ' ', 0x00};
     char* video_memory = (char*) 0xB8000;
-    int cursor = 0;
+
     // 1. On prépare l'affichage
     clear();
     seed_random(7);
     int value = randint()%5;
-    char PROMPT[23] = "The Kernel v0.2.11 >> ";
-    print(PROMPT, &cursor);
+    print(PROMPT);
 
     // 2. Configuration matérielle (Une seule fois !)
     pic_remap();
@@ -105,21 +113,27 @@ int main()
             } else if (last_scancode == 0xAA || last_scancode == 0xB6) {
                 MAJ = 0;
             }
+            
             if (last_scancode == 0x1C)
             {
-                cursor = ((cursor) / 160 + 1) * 160;
-                print(PROMPT, &cursor);
+                uint8_t sc = last_scancode;
+                last_scancode = 0;
+                cursor.position = ((cursor.position) / 160 + 1) * 160;
+                print(PROMPT);
                 continue;
             }
-            if (last_scancode == 0x0E)
+            
+            if (last_scancode == 0x0E && cursor.position >= 2) // touche Delet
             {
-                cursor -= 2;
-                video_memory[cursor] = ' ';
-                video_memory[cursor+1] = 0x0F;
+                uint8_t sc = last_scancode;
+                last_scancode = 0;
+                cursor.position -= 2;
+                video_memory[cursor.position] = ' ';
+                video_memory[cursor.position+1] = 0x0F;
                 continue;
             }
-            if (cursor > 4000)
-            {
+
+            if (cursor.position > 4000){
                 for (int k = 160; k < 4000; k++)
                 {
                     video_memory[k-160] = video_memory[k];
@@ -131,7 +145,7 @@ int main()
                     video_memory[k+1] = 0x0F;
                 }
 
-                cursor = 3840;
+                cursor.position = 3840;
             } else {
                 uint8_t sc = last_scancode;
                 last_scancode = 0;
@@ -146,13 +160,24 @@ int main()
 
                 // Essaie de mapper vers un caractère
                 char c = qwertz_german[MAJ][sc];
-                video_memory[cursor] = c;
-                video_memory[cursor+1] = 0x0F;
-                cursor += 2;
+                video_memory[cursor.position] = c;
+                video_memory[cursor.position+1] = 0x0F;
+                cursor.position += 2;
             }
         }
+        if (cursor.affiche) {
+            cursor.temp_char = video_memory[cursor.position];
+            cursor.temp_color = video_memory[cursor.position + 1];
+            video_memory[cursor.position] = cursor.skin;
+            video_memory[cursor.position + 1] = 0x0F;
+        } else if (!cursor.affiche) {
+            video_memory[cursor.position] = cursor.temp_char;
+            video_memory[cursor.position + 1] = cursor.temp_color;
+        }
+        cursor.affiche = !cursor.affiche;
     }
 
 
     return 0;
 }
+// Fin main.c

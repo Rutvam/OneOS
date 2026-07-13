@@ -1,3 +1,4 @@
+; Debut boot.asm
 [bits 16]          ; Mode réel 16 bits
 [org 0x7c00]        ; Adresse de chargement du BIOS
 
@@ -105,7 +106,7 @@ BIOS_attente_clavier:
         ; Test 3 : kernel
         mov si, kernel_commande
         mov di, buffer
-        call strcmp         
+        call strcmp
         je .executer_kernel
 
         ; --- GESTION DE L'ERREUR ---
@@ -216,8 +217,8 @@ delet db 0x08, 0x20, 0x08, 0
 clear_commande db "clear", 0 
 shutdown_commande db "shutdown", 0 
 kernel_commande db "kernel", 0 
-kernel_v db "0.2.11", 0
-boot_v db "0.6.2", 0
+kernel_v db "3.2.12", 0
+boot_v db "0.6.3", 0
 
 ; On place le buffer directement ici sans directive SECTION
 buffer:
@@ -226,3 +227,4 @@ buffer:
 ; --- SIGNATURE DE COUPE ---
 times 510-($-$$) db 0 
 dw 0xaa55
+; Fin boot.asm
