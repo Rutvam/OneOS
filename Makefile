@@ -33,12 +33,6 @@ test: $(TARGET)
 test-TUI: $(TARGET)
 	$(EMULATOR) -display curses -drive format=raw,file=$(TARGET)
 
-send: $(TARGET)
-	scp -P 2222 $(TARGET) rutvam55@192.168.178.37:/home/rutvam55/CODE/OS/compile/os-image.bin
-
-run:
-	ssh -p 2222 rutvam55@192.168.178.37 "qemu-system-x86_64 -drive format=raw,file=/home/rutvam55/CODE/OS/compile/os-image.bin"
-
 # Construction de l'image
 $(TARGET): boot.asm kernel_entry.asm main.c IDT.c
 	@mkdir -p $(BUILD_DIR)
@@ -47,9 +41,9 @@ $(TARGET): boot.asm kernel_entry.asm main.c IDT.c
 	$(NASMC) $(NASMFLAGS_ELF) kernel_entry.asm -o $(BUILD_DIR)/kernel_entry.o
 
 	$(CC) $(CFLAGS) main.c -o $(BUILD_DIR)/main.o
-	$(CC) $(CFLAGS) IDT.c -o $(BUILD_DIR)/IDT.o
-	$(CC) $(CFLAGS) math.c -o $(BUILD_DIR)/math.o
-	$(CC) $(CFLAGS) function.c -o $(BUILD_DIR)/function.o
+	$(CC) $(CFLAGS) ./core/idt/IDT.c -o $(BUILD_DIR)/IDT.o
+	$(CC) $(CFLAGS) ./core/function/math.c -o $(BUILD_DIR)/math.o
+	$(CC) $(CFLAGS) ./core/function/function.c -o $(BUILD_DIR)/function.o
 
 	$(LDC) $(LDFLAGS) \
 		$(BUILD_DIR)/kernel_entry.o \
