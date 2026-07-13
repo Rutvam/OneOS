@@ -34,13 +34,19 @@ test-TUI: $(TARGET)
 	$(EMULATOR) -display curses -drive format=raw,file=$(TARGET)
 
 # Construction de l'image
-$(TARGET): boot.asm kernel_entry.asm main.c IDT.c
+$(TARGET): ./boot.asm \
+	       ./kernel_entry.asm \
+	       ./main.c \
+	       ./core/idt/IDT.c \
+	       ./core/function/math.c \
+	       ./core/function/function.c
+	
 	@mkdir -p $(BUILD_DIR)
 
 	$(NASMC) $(NASMFLAGS_BIN) boot.asm -o $(BUILD_DIR)/boot.bin
 	$(NASMC) $(NASMFLAGS_ELF) kernel_entry.asm -o $(BUILD_DIR)/kernel_entry.o
 
-	$(CC) $(CFLAGS) main.c -o $(BUILD_DIR)/main.o
+	$(CC) $(CFLAGS) ./main.c -o $(BUILD_DIR)/main.o
 	$(CC) $(CFLAGS) ./core/idt/IDT.c -o $(BUILD_DIR)/IDT.o
 	$(CC) $(CFLAGS) ./core/function/math.c -o $(BUILD_DIR)/math.o
 	$(CC) $(CFLAGS) ./core/function/function.c -o $(BUILD_DIR)/function.o
