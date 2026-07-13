@@ -1,6 +1,6 @@
-#include "IDT.h"
-#include "math.h"
-#include "function.h"
+#include "./core/idt/IDT.h"
+#include "./core/function/math.h"
+#include "./core/function/function.h"
 // Une macro qui capture le fichier et la ligne automatiquement
 #define ASSERT_OR_LOG(condition, message) \
     if (!(condition)) { \
@@ -41,15 +41,29 @@ void clear()
 	}
 }
 
-static const unsigned char qwertz_german[128] = {
-   0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9',  '0', 0xE1,   '`', '\b', // 0x00 - 0x0E (0xE1 = ß en CP437) 15
-'\t', 'q', 'w', 'e', 'r', 't', 'z', 'u', 'i', 'o', 'p', 0x81,  '+',  '\n',        // 0x0F - 0x1C (0x81 = ü en CP437) 14
-   0, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l',0x94, 0x84,  '^',              // 0x1D - 0x29 (0x94 = ö, 0x84 = ä) 13
-   0, '#', 'y', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.',  '-',    0,               // 0x2A - 0x36 13
- '*',   0, ' ',   0,   0,   0,   0,   0,   0,   0,   0,    0,    0,    0,        // 0x37 - 0x44
-   0,   0,   0,   0,   0,   0,   0, '7', '8', '9', '-',  '4',  '5',  '6', '+',    // 0x45 - 0x53
- '1', '2', '3', '0', ',',   0,   0, '<',   0,   0                             // 0x54 - 0x5D 
-};;
+static const unsigned char qwertz_german[2][128] = {
+    // Normal
+    {
+        0, 27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 0xE1, 0x27, '\b',
+        '\t', 'q', 'w', 'e', 'r', 't', 'z', 'u', 'i', 'o', 'p', 0x81, '+', '\n',
+        0, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 0x94, 0x84, '^',
+        0, '<', 'y', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-',
+        0, '*', 0, ' ', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, '7', '8', '9', '-', '4', '5', '6', '+',
+        '1', '2', '3', '0', ',', 0, 0, '<', 0, 0
+    },
+
+    // Shift
+    {
+         0,     27,  '!',  '"',  0x15,  '$',  '%',  '&',  '/',  '(',  ')',   '=',   '?',   '`',   '\b',
+        '\t',  'Q',  'W',  'E',  'R',   'T',  'Z',  'U',  'I',  'O',  'P',   0x9A,  '*',   '\n',
+         0,    'A',  'S',  'D',  'F',   'G',  'H',  'J',  'K',  'L',  0x99,  0x8E,  0xF8,
+         0,    '>',  'Y',  'X',  'C',   'V',  'B',  'N',  'M',  ';',  ':',   '_',
+         0,    '*',   0,   ' ',   0,     0,    0,    0,    0,    0,    0,     0,     0,     0,
+         0,     0,    0,    0,    0,     0,    0,   '/',  '(',  ')',  '_',   '4',   '5',   '6',   '+',
+        '1',   '2',  '3',  '0',  ',',    0,    0,   '>',   0,    0
+    }
+};
 
 volatile uint8_t last_scancode = 0;
 
@@ -70,23 +84,40 @@ int main()
     clear();
     seed_random(7);
     int value = randint()%5;
-    print("The Kernel v0.2.5\n", &cursor);
+    char PROMPT[23] = "The Kernel v0.2.11 >> ";
+    print(PROMPT, &cursor);
 
     // 2. Configuration matérielle (Une seule fois !)
     pic_remap();
     set_idt_gate(33, (uint32_t)(uintptr_t)keyboard_handler_asm);
     init_idt();
-    
-    print("IDT chargee avec succes.\n", &cursor);
 
     // 3. On ouvre les vannes du clavier
     __asm__ __volatile__("sti");
-    print("Interruptions activees!\n", &cursor);
-
+    int MAJ = 0;
+    int CTRL_STRG = 0;
     // 4. Boucle de repos (Le CPU attend sagement ici)
     while (1)
     {
         if (last_scancode) {
+            if (last_scancode == 0x2A || last_scancode == 0x36) {
+                MAJ = 1;
+            } else if (last_scancode == 0xAA || last_scancode == 0xB6) {
+                MAJ = 0;
+            }
+            if (last_scancode == 0x1C)
+            {
+                cursor = ((cursor) / 160 + 1) * 160;
+                print(PROMPT, &cursor);
+                continue;
+            }
+            if (last_scancode == 0x0E)
+            {
+                cursor -= 2;
+                video_memory[cursor] = ' ';
+                video_memory[cursor+1] = 0x0F;
+                continue;
+            }
             if (cursor > 4000)
             {
                 for (int k = 160; k < 4000; k++)
@@ -114,7 +145,7 @@ int main()
                 }
 
                 // Essaie de mapper vers un caractère
-                char c = qwertz_german[sc];
+                char c = qwertz_german[MAJ][sc];
                 video_memory[cursor] = c;
                 video_memory[cursor+1] = 0x0F;
                 cursor += 2;
