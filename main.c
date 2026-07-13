@@ -9,6 +9,17 @@
         kernel_panic(message, __FILE__, __LINE__); \
     }
 
+static inline void vga_set_cursor(int position)
+{
+    // Registre bas
+    __asm__ __volatile__("outb %0, %1" : : "a"(0x0F), "d"(0x3D4));
+    __asm__ __volatile__("outb %0, %1" : : "a"(position & 0xFF), "d"(0x3D5));
+
+    // Registre haut
+    __asm__ __volatile__("outb %0, %1" : : "a"(0x0E), "d"(0x3D4));
+    __asm__ __volatile__("outb %0, %1" : : "a"((position >> 8) & 0xFF), "d"(0x3D5));
+}
+
 
 void kernel_panic(const char* message, const char* file, int line)
 {
@@ -165,6 +176,9 @@ int main()
                 cursor.position += 2;
             }
         }
+        vga_set_cursor(cursor.position);
+        // Mon Curseur
+        /*
         if (cursor.affiche) {
             cursor.temp_char = video_memory[cursor.position];
             cursor.temp_color = video_memory[cursor.position + 1];
@@ -175,6 +189,7 @@ int main()
             video_memory[cursor.position + 1] = cursor.temp_color;
         }
         cursor.affiche = !cursor.affiche;
+        */
     }
 
 
