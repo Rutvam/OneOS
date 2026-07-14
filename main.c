@@ -12,12 +12,12 @@
 static inline void vga_set_cursor(int position)
 {
     // Registre bas
-    __asm__ __volatile__("outb %0, %1" : : "a"(0x0F), "d"(0x3D4));
-    __asm__ __volatile__("outb %0, %1" : : "a"(position & 0xFF), "d"(0x3D5));
+    __asm__ __volatile__("outb %b0, %w1" : : "a"(0x0F), "d"(0x3D4));
+    __asm__ __volatile__("outb %b0, %w1" : : "a"(position & 0xFF), "d"(0x3D5));
 
     // Registre haut
-    __asm__ __volatile__("outb %0, %1" : : "a"(0x0E), "d"(0x3D4));
-    __asm__ __volatile__("outb %0, %1" : : "a"((position >> 8) & 0xFF), "d"(0x3D5));
+    __asm__ __volatile__("outb %b0, %w1" : : "a"(0x0E), "d"(0x3D4));
+    __asm__ __volatile__("outb %b0, %w1" : : "a"((position >> 8) & 0xFF), "d"(0x3D5));
 }
 
 
@@ -176,7 +176,7 @@ int main()
                 cursor.position += 2;
             }
         }
-        vga_set_cursor(cursor.position);
+        vga_set_cursor(cursor.position/2);
         // Mon Curseur
         /*
         if (cursor.affiche) {
