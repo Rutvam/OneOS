@@ -20,6 +20,11 @@ static inline void vga_set_cursor(int position)
     __asm__ __volatile__("outb %b0, %w1" : : "a"((position >> 8) & 0xFF), "d"(0x3D5));
 }
 
+void putpixel(int x, int y, uint32_t color) {
+    uint32_t* fb = (uint32_t*) vbe->PhysBasePtr;
+    int pitch = vbe->Pitch / 4; // bytes → pixels
+    fb[y * pitch + x] = color;
+}
 
 void kernel_panic(const char* message, const char* file, int line)
 {
@@ -107,6 +112,13 @@ int main()
         int SCC_press;
         int SCC_release;
     };
+    struct VBEInfo* vbe = (struct VBEInfo*) 0x9000;
+    uint32_t* fb = (uint32_t*) vbe->PhysBasePtr;
+    putpixel(100, 100, 0x00FF0000); // Rouge
+
+    int nb_char = 0;
+    char memory[300] = {0x00};
+
     char vBig[3] = "00";
     char vMid[3] = "00";
     char vLit[3] = "00";
@@ -131,14 +143,14 @@ int main()
         vLit[0] = '0';
     }
 
-    const char PROMPT[25] = {'T', 'h', 'e', ' ', 'K', 'e', 'r', 'n', 'e', 'l', ' ', 'v', vBig[0], vBig[1], '.', vMid[0], vMid[1], '.', vLit[0], vLit[1], ' ', '>', '>', ' ', 0x00};
-    char* video_memory = (char*) 0xB8000;
+    const char PROMPT[25] = {'K', 'e', 'r', 'n', 'e', 'l', ' ', 'v', vBig[0], vBig[1], '.', vMid[0], vMid[1], '.', vLit[0], vLit[1], ' ', ' ', ' ', '>', '>', ' ', 0x00};
+    // char* video_memory = (char*) 0xB8000;
 
     // 1. On prépare l'affichage
     clear();
     seed_random(7);
     int value = randint()%5;
-    print(PROMPT);
+    //print(PROMPT);
 
     // 2. Configuration matérielle (Une seule fois !)
     pic_remap();
@@ -233,7 +245,7 @@ int main()
                 uint8_t sc = last_scancode;
                 last_scancode = 0;
                 cursor.position = ((cursor.position) / 160 + 1) * 160;
-                print(PROMPT);
+                // print(PROMPT);
                 continue;
             }
             
@@ -242,8 +254,8 @@ int main()
                 uint8_t sc = last_scancode;
                 last_scancode = 0;
                 cursor.position -= 2;
-                video_memory[cursor.position] = ' ';
-                video_memory[cursor.position+1] = 0x0F;
+                // video_memory[cursor.position] = ' ';
+                // video_memory[cursor.position+1] = 0x0F;
                 continue;
             }
 
@@ -255,8 +267,8 @@ int main()
 
                 for (int k = 3840; k < 3999; k += 2)
                 {
-                    video_memory[k] = ' ';
-                    video_memory[k+1] = 0x0F;
+                    // video_memory[k] = ' ';
+                    // video_memory[k+1] = 0x0F;
                 }
 
                 cursor.position = 3840;
@@ -280,9 +292,11 @@ int main()
                 } else {
                     char c = qwertz_german[0][sc];
                 }
-                video_memory[cursor.position] = c;
-                video_memory[cursor.position+1] = 0x0F;
+                // video_memory[cursor.position] = c;
+                // video_memory[cursor.position+1] = 0x0F;
                 cursor.position += 2;
+                memory[nb_char] = c;
+                nb_char++;
             }
         }
         vga_set_cursor(cursor.position/2);

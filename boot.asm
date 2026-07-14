@@ -120,6 +120,11 @@ BIOS_attente_clavier:
         jmp start.boucle_principale
 
     .executer_kernel:
+        mov ax, 0x4F02        ; Set VBE mode
+        mov bx, MODE_ID | 0x4000  ; bit 14 = framebuffer linéaire
+        int 0x10
+        ; call activer_mode_graphique_1080p
+        call sauvegarder_infos_framebuffer
         call BIOS_charger_kernel    ; 1. Charge le kernel depuis le disque vers la RAM (0x1000)
         jmp passer_en_mode_protege  ; 2. Bascule en 32 bits et saute sur le kernel !
 
@@ -149,6 +154,13 @@ BIOS_attente_clavier:
         mov si, delet
         call BIOS_print     
         jmp BIOS_attente_clavier
+
+sauvegarder_infos_framebuffer
+    mov di, 0x9000
+    mov ax, 0x4F01
+    mov cx, MODE_ID
+    int 0x10
+    ret
 
 BIOS_charger_kernel:
     mov ah, 0x02        ; Fonction BIOS : Lire des secteurs
