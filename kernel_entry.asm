@@ -18,7 +18,7 @@ _start:
     mov ebp, 0x8F000
     mov esp, 0x8E000 ; Laisser au moins 4KB pour la pile
 
-    mov byte [kernel_vBig], 0x3 ; 3
+    mov byte [kernel_vBig], 0x4 ; 4
     mov byte [kernel_vMid], 0x2 ; 2
     mov byte [kernel_vLit], 0xC ;12
 

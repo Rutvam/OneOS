@@ -4,6 +4,7 @@
 
 start:
     ; Initialisation des segments de données et sauvegarde du disque
+    %define MODE_ID 0x118
     mov [BOOT_DRIVE], dl
     xor ax, ax
     mov ds, ax
@@ -155,13 +156,6 @@ BIOS_attente_clavier:
         call BIOS_print     
         jmp BIOS_attente_clavier
 
-sauvegarder_infos_framebuffer
-    mov di, 0x9000
-    mov ax, 0x4F01
-    mov cx, MODE_ID
-    int 0x10
-    ret
-
 BIOS_charger_kernel:
     mov ah, 0x02        ; Fonction BIOS : Lire des secteurs
     mov al, 32          ; Lire 32 secteurs | 1 secteur = 512o | 32*512 = 16384o
@@ -182,6 +176,13 @@ BIOS_charger_kernel:
     	call BIOS_print
     	call BIOS_newline
         jmp start.boucle_principale
+
+sauvegarder_infos_framebuffer:
+    mov di, 0x9000
+    mov ax, 0x4F01
+    mov cx, MODE_ID
+    int 0x10
+    ret
 
 ; --- PASSAGE EN MODE PROTÉGÉ (32 bits) ---
 passer_en_mode_protege:
@@ -223,14 +224,14 @@ gdt_descriptor:
 ; --- DONNÉES TEXTE ET BUFFER ---
 BOOT_DRIVE db 0         
 PROMPT db ">> ", 0
-erreur db "ERREUR: Cette commande n'existe pas", 0
-erreur_charge_kernel db "ERREUR: Pendant le chargement du kernel", 0
+erreur db "ERROR: n'existe pas", 0
+erreur_charge_kernel db "ERROR: Chargement du kernel", 0
 delet db 0x08, 0x20, 0x08, 0
 clear_commande db "clear", 0 
 shutdown_commande db "shutdown", 0 
 kernel_commande db "kernel", 0 
-kernel_v db "3.2.12", 0
-boot_v db "0.6.3", 0
+kernel_v db "4.2.12", 0
+boot_v db "7.4", 0
 
 ; On place le buffer directement ici sans directive SECTION
 buffer:

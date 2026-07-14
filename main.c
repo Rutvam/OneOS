@@ -21,10 +21,16 @@ static inline void vga_set_cursor(int position)
 }
 
 void putpixel(int x, int y, uint32_t color) {
+    struct VBEInfo* vbe = (struct VBEInfo*) 0x9000;
+
+    if (x < 0 || y < 0 || x >= vbe->XResolution || y >= vbe->YResolution)
+        return;
+
     uint32_t* fb = (uint32_t*) vbe->PhysBasePtr;
-    int pitch = vbe->Pitch / 4; // bytes → pixels
+    int pitch = vbe->pitch / 4;
     fb[y * pitch + x] = color;
 }
+
 
 void kernel_panic(const char* message, const char* file, int line)
 {
@@ -112,9 +118,13 @@ int main()
         int SCC_press;
         int SCC_release;
     };
+
     struct VBEInfo* vbe = (struct VBEInfo*) 0x9000;
     uint32_t* fb = (uint32_t*) vbe->PhysBasePtr;
-    putpixel(100, 100, 0x00FF0000); // Rouge
+
+    putpixel(959, 540, 0x00000000); // Noire RGB
+    putpixel(960, 540, 0x00FF5555); // Jaune RGB
+    putpixel(961, 540, 0x00FF0000); // Rouge RGB
 
     int nb_char = 0;
     char memory[300] = {0x00};
@@ -177,15 +187,15 @@ int main()
     };
     int CTRL_L = 0;
     int CTRL_R = 0;
-    int etendue = {
+    struct TOUCHE etendue = {
         .value = 0,
         .SCC_press = 0x0E
-    }
-    int ALT_L = {
+    };
+    struct TOUCHE ALT_L = {
         .value = 0,
         .SCC_press = 0x38,
         .SCC_release = 0xB8
-    }
+    };
     // 4. Boucle de repos (Le CPU attend sagement ici)
     while (1)
     {
@@ -217,20 +227,20 @@ int main()
                     etendue.value = 1;
                 }
 
-                continue
+                continue;
             } else if (last_scancode == CTRL.SCC_release && CTRL.value) {
                 CTRL.value = 0;
                 etendue.value = 0;
-                continue
+                continue;
             }
 
-            if (CTRL.value && etendue) {
+            if (CTRL.value && etendue.value) {
                 CTRL_R = 1;
                 CTRL_L = 0;
                 continue;
-            } else if (CTRL.value && !etendue) {
+            } else if (CTRL.value && !etendue.value) {
                 CTRL_R = 0;
-                CTRL_L = 1
+                CTRL_L = 1;
                 continue;
             }
 
@@ -262,7 +272,7 @@ int main()
             if (cursor.position > 4000){
                 for (int k = 160; k < 4000; k++)
                 {
-                    video_memory[k-160] = video_memory[k];
+                    // video_memory[k-160] = video_memory[k];
                 }
 
                 for (int k = 3840; k < 3999; k += 2)
@@ -284,13 +294,14 @@ int main()
                     continue;
                 }
 
+                char c;
                 // Essaie de mapper vers un caractère
-                if (MAJ && !ALT_GR) {
-                    char c = qwertz_german[1][sc];
-                } else if (!MAJ && ALT_GR) {
-                    char c = qwertz_german[2][sc];
+                if ((MAJ_L.value || MAJ_R.value) && !ALT_GR) {
+                    c = qwertz_german[1][sc];
+                } else if ((!MAJ_L.value && !MAJ_R.value) && ALT_GR) {
+                    c = qwertz_german[2][sc];
                 } else {
-                    char c = qwertz_german[0][sc];
+                    c = qwertz_german[0][sc];
                 }
                 // video_memory[cursor.position] = c;
                 // video_memory[cursor.position+1] = 0x0F;
