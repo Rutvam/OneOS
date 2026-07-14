@@ -54,7 +54,7 @@ void clear()
 	}
 }
 
-static const unsigned char qwertz_german[2][128] = {
+static const unsigned char qwertz_german[3][128] = {
     // Normal
     {
         0, 27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 0xE1, 0x27, '\b',
@@ -75,6 +75,17 @@ static const unsigned char qwertz_german[2][128] = {
          0,    '*',   0,   ' ',   0,     0,    0,    0,    0,    0,    0,     0,     0,     0,
          0,     0,    0,    0,    0,     0,    0,   '/',  '(',  ')',  '_',   '4',   '5',   '6',   '+',
         '1',   '2',  '3',  '0',  ',',    0,    0,   '>',   0,    0
+    },
+
+    // ALT_GR
+    {
+        0, 27, 0xB9, 0xB2, 0xB3, 0xBC, 0xBD, '&', '{', '[', ']', '}', '\\', 0, 0,
+        0, '@', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x9A, '~', 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x99, 0x8E, 0xF8,
+        0, '|', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, '*', 0, ' ', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, '/', '(', ')', '_', '4', '5', '6', '+',
+        '1', '2', '3', '0', ',', 0, 0, '>', 0, 0
     }
 };
 
@@ -91,12 +102,35 @@ void keyboard_handler_c() {
 // Dans kernel.c
 int main()
 {
+    struct TOUCHE {
+        int value;
+        int SCC_press;
+        int SCC_release;
+    };
     char vBig[3] = "00";
     char vMid[3] = "00";
     char vLit[3] = "00";
     itoa(kernel_vBig, vBig);
     itoa(kernel_vMid, vMid);
     itoa(kernel_vLit, vLit);
+    if (vBig[1] != 0x00)
+    {
+        vBig[1] = vBig[0];
+        vBig[0] = '0';
+    }
+
+    if (vMid[1] != 0x00)
+    {
+        vMid[1] = vMid[0];
+        vMid[0] = '0';
+    }
+
+    if (vLit[1] != 0x00)
+    {
+        vLit[1] = vLit[0];
+        vLit[0] = '0';
+    }
+
     const char PROMPT[25] = {'T', 'h', 'e', ' ', 'K', 'e', 'r', 'n', 'e', 'l', ' ', 'v', vBig[0], vBig[1], '.', vMid[0], vMid[1], '.', vLit[0], vLit[1], ' ', '>', '>', ' ', 0x00};
     char* video_memory = (char*) 0xB8000;
 
@@ -113,16 +147,85 @@ int main()
 
     // 3. On ouvre les vannes du clavier
     __asm__ __volatile__("sti");
-    int MAJ = 0;
-    int CTRL_STRG = 0;
+    struct TOUCHE MAJ_L = {
+        .value = 0,
+        .SCC_press = 0x2A,
+        .SCC_release = 0xAA
+    };
+    struct TOUCHE MAJ_R = {
+        .value = 0,
+        .SCC_press = 0x36,
+        .SCC_release = 0xB6
+    };
+    int ALT_GR = 0;
+    struct TOUCHE CTRL = {
+        .value = 0,
+        .SCC_press = 0x1D,
+        .SCC_release = 0x9D
+    };
+    int CTRL_L = 0;
+    int CTRL_R = 0;
+    int etendue = {
+        .value = 0,
+        .SCC_press = 0x0E
+    }
+    int ALT_L = {
+        .value = 0,
+        .SCC_press = 0x38,
+        .SCC_release = 0xB8
+    }
     // 4. Boucle de repos (Le CPU attend sagement ici)
     while (1)
     {
         if (last_scancode) {
-            if (last_scancode == 0x2A || last_scancode == 0x36) {
-                MAJ = 1;
-            } else if (last_scancode == 0xAA || last_scancode == 0xB6) {
-                MAJ = 0;
+
+            if ((last_scancode == MAJ_L.SCC_press || last_scancode == MAJ_R.SCC_press) && !MAJ_L.value) {
+                MAJ_L.value = 1;
+                continue;
+            } else if ((last_scancode == MAJ_L.SCC_press || last_scancode == MAJ_R.SCC_press) && !MAJ_R.value) {
+                MAJ_R.value = 1;
+                continue;
+            } else if ((last_scancode == MAJ_L.SCC_release || last_scancode == MAJ_R.SCC_release) && MAJ_L.value) {
+                MAJ_L.value = 0;
+                continue;
+            } else if ((last_scancode == MAJ_L.SCC_release || last_scancode == MAJ_R.SCC_release) && MAJ_R.value) {
+                MAJ_R.value = 0;
+                continue;
+            } else if (last_scancode == ALT_L.SCC_press && !ALT_L.value) {
+                ALT_L.value = 1;
+                continue;
+            } else if (last_scancode == ALT_L.SCC_release && ALT_L.value) {
+                ALT_L.value = 0;
+                continue;
+            } else if (last_scancode == CTRL.SCC_press && !CTRL.value) {
+                CTRL.value = 1;
+
+                if (last_scancode == etendue.SCC_press && !etendue.value)
+                {
+                    etendue.value = 1;
+                }
+
+                continue
+            } else if (last_scancode == CTRL.SCC_release && CTRL.value) {
+                CTRL.value = 0;
+                etendue.value = 0;
+                continue
+            }
+
+            if (CTRL.value && etendue) {
+                CTRL_R = 1;
+                CTRL_L = 0;
+                continue;
+            } else if (CTRL.value && !etendue) {
+                CTRL_R = 0;
+                CTRL_L = 1
+                continue;
+            }
+
+            if (CTRL_R && ALT_L.value){
+                ALT_GR = 1;
+            } else if (!CTRL_R || !ALT_L.value) {
+                ALT_GR = 0;
             }
             
             if (last_scancode == 0x1C)
@@ -170,7 +273,13 @@ int main()
                 }
 
                 // Essaie de mapper vers un caractère
-                char c = qwertz_german[MAJ][sc];
+                if (MAJ && !ALT_GR) {
+                    char c = qwertz_german[1][sc];
+                } else if (!MAJ && ALT_GR) {
+                    char c = qwertz_german[2][sc];
+                } else {
+                    char c = qwertz_german[0][sc];
+                }
                 video_memory[cursor.position] = c;
                 video_memory[cursor.position+1] = 0x0F;
                 cursor.position += 2;
