@@ -45,7 +45,9 @@ $(TARGET): ./boot.asm \
 	       ./core/function/random.c \
 	       ./core/function/function.c \
 	       ./core/keyboard/keyboard.c \
-	       ./core/graphics/graphics.c \
+	       ./data/police_classic/police_classic_bold.c \
+	       ./data/police_classic/police_classic_regular.c \
+	       ./graphics/graphics.c
 
 	@mkdir -p $(BUILD_DIR)
 
@@ -60,7 +62,9 @@ $(TARGET): ./boot.asm \
 	$(CC) $(CFLAGS) ./core/function/random.c -o $(BUILD_DIR)/random.o
 	$(CC) $(CFLAGS) ./core/function/function.c -o $(BUILD_DIR)/function.o
 	$(CC) $(CFLAGS) ./core/keyboard/keyboard.c -o $(BUILD_DIR)/keyboard.o
-	$(CC) $(CFLAGS) ./core/graphics/graphics.c -o $(BUILD_DIR)/graphics.o
+	$(CC) $(CFLAGS) ./data/police_classic/police_classic_bold.c -o $(BUILD_DIR)/police_classic_bold.o
+	$(CC) $(CFLAGS) ./data/police_classic/police_classic_regular.c -o $(BUILD_DIR)/police_classic_regular.o
+	$(CC) $(CFLAGS) ./graphics/graphics.c -o $(BUILD_DIR)/graphics.o
 
 	$(LDC) $(LDFLAGS) \
 		$(BUILD_DIR)/kernel_entry.o \
@@ -72,6 +76,7 @@ $(TARGET): ./boot.asm \
 		$(BUILD_DIR)/random.o \
 		$(BUILD_DIR)/function.o \
 		$(BUILD_DIR)/keyboard.o \
+		$(BUILD_DIR)/police_classic_bold.o \
 		$(BUILD_DIR)/graphics.o \
 		-o $(BUILD_DIR)/kernel.bin
 

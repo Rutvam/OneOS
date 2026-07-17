@@ -45,6 +45,7 @@ typedef struct VBEInfo {
     uint8_t  reserved2[206];
 } VBEInfo;
 
+// structure du curseur
 
 struct CURSOR {
 	char skin;
@@ -56,20 +57,18 @@ struct CURSOR {
 
 extern struct CURSOR cursor;
 
-struct CHARA {
-	int LIGNE1;
-	int LIGNE2;
-	int LIGNE3;
-	int LIGNE4;
-	int LIGNE5;
-	int LIGNE6;
-	int LIGNE7;
-	int LIGNE8;
-};
 
-extern struct CHARA char_A;
-extern struct CHARA char_B;
-extern struct CHARA char_C;
+
+struct TOUCHE {
+    int value;
+    int SCC_press;
+    int SCC_release;
+};
+extern struct TOUCHE MAJ_L;
+extern struct TOUCHE MAJ_R;
+extern struct TOUCHE CTRL;
+extern struct TOUCHE etendue;
+extern struct TOUCHE ALT_L;
 
 #endif
 // Fin global_value.h

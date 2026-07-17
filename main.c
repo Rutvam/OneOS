@@ -50,12 +50,6 @@ void kernel_panic(const char* message, const char* file, int line)
 // Dans kernel.c
 int main()
 {
-    struct TOUCHE {
-        int value;
-        int SCC_press;
-        int SCC_release;
-    };
-
     struct VBEInfo* vbe = (struct VBEInfo*) 0x9000;
     uint32_t* fb = (uint32_t*) vbe->PhysBasePtr;
 
@@ -106,33 +100,9 @@ int main()
 
     // 3. On ouvre les vannes du clavier
     __asm__ __volatile__("sti");
-    struct TOUCHE MAJ_L = {
-        .value = 0,
-        .SCC_press = 0x2A,
-        .SCC_release = 0xAA
-    };
-    struct TOUCHE MAJ_R = {
-        .value = 0,
-        .SCC_press = 0x36,
-        .SCC_release = 0xB6
-    };
     int ALT_GR = 0;
-    struct TOUCHE CTRL = {
-        .value = 0,
-        .SCC_press = 0x1D,
-        .SCC_release = 0x9D
-    };
     int CTRL_L = 0;
     int CTRL_R = 0;
-    struct TOUCHE etendue = {
-        .value = 0,
-        .SCC_press = 0x0E
-    };
-    struct TOUCHE ALT_L = {
-        .value = 0,
-        .SCC_press = 0x38,
-        .SCC_release = 0xB8
-    };
     // 4. Boucle de repos (Le CPU attend sagement ici)
     while (1)
     {
