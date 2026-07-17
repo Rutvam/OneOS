@@ -41,6 +41,8 @@ $(TARGET): ./boot.asm \
 	       ./core/idt/IDT.c \
 	       ./core/value/global_value.c \
 	       ./core/function/math.c \
+	       ./core/function/memory.c \
+	       ./core/function/random.c \
 	       ./core/function/function.c
 
 	@mkdir -p $(BUILD_DIR)
@@ -52,6 +54,8 @@ $(TARGET): ./boot.asm \
 	$(CC) $(CFLAGS) ./core/idt/IDT.c -o $(BUILD_DIR)/IDT.o
 	$(CC) $(CFLAGS) ./core/value/global_value.c -o $(BUILD_DIR)/global_value.o
 	$(CC) $(CFLAGS) ./core/function/math.c -o $(BUILD_DIR)/math.o
+	$(CC) $(CFLAGS) ./core/function/memory.c -o $(BUILD_DIR)/memory.o
+	$(CC) $(CFLAGS) ./core/function/random.c -o $(BUILD_DIR)/random.o
 	$(CC) $(CFLAGS) ./core/function/function.c -o $(BUILD_DIR)/function.o
 
 	$(LDC) $(LDFLAGS) \
@@ -60,6 +64,8 @@ $(TARGET): ./boot.asm \
 		$(BUILD_DIR)/IDT.o \
 		$(BUILD_DIR)/global_value.o \
 		$(BUILD_DIR)/math.o \
+		$(BUILD_DIR)/memory.o \
+		$(BUILD_DIR)/random.o \
 		$(BUILD_DIR)/function.o \
 		-o $(BUILD_DIR)/kernel.bin
 

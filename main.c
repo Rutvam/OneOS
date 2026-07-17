@@ -2,6 +2,8 @@
 #include "./core/idt/IDT.h"
 #include "./core/value/global_value.h"
 #include "./core/function/math.h"
+#include "./core/function/random.h"
+#include "./core/function/memory.h"
 #include "./core/function/function.h"
 // Une macro qui capture le fichier et la ligne automatiquement
 #define ASSERT_OR_LOG(condition, message) \
