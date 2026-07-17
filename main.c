@@ -6,6 +6,7 @@
 #include "./core/function/memory.h"
 #include "./core/function/function.h"
 #include "./core/keyboard/keyboard.h"
+#include "./core/graphics/graphics.h"
 
 // Une macro qui capture le fichier et la ligne automatiquement
 #define ASSERT_OR_LOG(condition, message) \
@@ -23,18 +24,6 @@ static inline void vga_set_cursor(int position)
     __asm__ __volatile__("outb %b0, %w1" : : "a"(0x0E), "d"(0x3D4));
     __asm__ __volatile__("outb %b0, %w1" : : "a"((position >> 8) & 0xFF), "d"(0x3D5));
 }
-
-void putpixel(int x, int y, uint32_t color) {
-    struct VBEInfo* vbe = (struct VBEInfo*) 0x9000;
-
-    if (x < 0 || y < 0 || x >= vbe->XResolution || y >= vbe->YResolution)
-        return;
-
-    uint32_t* fb = (uint32_t*) vbe->PhysBasePtr;
-    int pitch = vbe->pitch / 4;
-    fb[y * pitch + x] = color;
-}
-
 
 void kernel_panic(const char* message, const char* file, int line)
 {

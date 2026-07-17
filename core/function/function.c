@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include "function.h"
 #include "../value/global_value.h"
+#include "../graphics/graphics.h"
 
 void clear()
 {
