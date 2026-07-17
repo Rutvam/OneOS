@@ -5,6 +5,8 @@
 #include "./core/function/random.h"
 #include "./core/function/memory.h"
 #include "./core/function/function.h"
+#include "./core/keyboard/keyboard.h"
+
 // Une macro qui capture le fichier et la ligne automatiquement
 #define ASSERT_OR_LOG(condition, message) \
     if (!(condition)) { \
@@ -54,62 +56,6 @@ void kernel_panic(const char* message, const char* file, int line)
     }
 }
 
-extern void keyboard_handler_asm();
-
-void clear()
-{
-	char* video_memory = (char*) 0xB8000;
-	video_memory[0] = ' ';
-	for (int i = 2; i < 4000; i = i + 2)
-	{
-		video_memory[i] = ' ';
-		video_memory[i-1] = 0x0F;
-	}
-}
-
-static const unsigned char qwertz_german[3][128] = {
-    // Normal
-    {
-        0, 27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 0xE1, 0x27, '\b',
-        '\t', 'q', 'w', 'e', 'r', 't', 'z', 'u', 'i', 'o', 'p', 0x81, '+', '\n',
-        0, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 0x94, 0x84, '^',
-        0, '<', 'y', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-',
-        0, '*', 0, ' ', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, '7', '8', '9', '-', '4', '5', '6', '+',
-        '1', '2', '3', '0', ',', 0, 0, '<', 0, 0
-    },
-
-    // Shift
-    {
-         0,     27,  '!',  '"',  0x15,  '$',  '%',  '&',  '/',  '(',  ')',   '=',   '?',   '`',   '\b',
-        '\t',  'Q',  'W',  'E',  'R',   'T',  'Z',  'U',  'I',  'O',  'P',   0x9A,  '*',   '\n',
-         0,    'A',  'S',  'D',  'F',   'G',  'H',  'J',  'K',  'L',  0x99,  0x8E,  0xF8,
-         0,    '>',  'Y',  'X',  'C',   'V',  'B',  'N',  'M',  ';',  ':',   '_',
-         0,    '*',   0,   ' ',   0,     0,    0,    0,    0,    0,    0,     0,     0,     0,
-         0,     0,    0,    0,    0,     0,    0,   '/',  '(',  ')',  '_',   '4',   '5',   '6',   '+',
-        '1',   '2',  '3',  '0',  ',',    0,    0,   '>',   0,    0
-    },
-
-    // ALT_GR
-    {
-        0, 27, 0xB9, 0xB2, 0xB3, 0xBC, 0xBD, '&', '{', '[', ']', '}', '\\', 0, 0,
-        0, '@', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x9A, '~', 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x99, 0x8E, 0xF8,
-        0, '|', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, '*', 0, ' ', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, '/', '(', ')', '_', '4', '5', '6', '+',
-        '1', '2', '3', '0', ',', 0, 0, '>', 0, 0
-    }
-};
-
-volatile uint8_t last_scancode = 0;
-
-void keyboard_handler_c() {
-    uint8_t scancode;
-    __asm__ __volatile__("inb $0x60, %0" : "=a"(scancode));
-    last_scancode = scancode;
-    __asm__ __volatile__("outb %%al, %%dx" : : "a"(0x20), "d"(0x20));
-}
 
 
 // Dans kernel.c

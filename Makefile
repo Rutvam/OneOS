@@ -43,7 +43,8 @@ $(TARGET): ./boot.asm \
 	       ./core/function/math.c \
 	       ./core/function/memory.c \
 	       ./core/function/random.c \
-	       ./core/function/function.c
+	       ./core/function/function.c \
+	       ./core/keyboard/keyboard.c \
 
 	@mkdir -p $(BUILD_DIR)
 
@@ -57,6 +58,7 @@ $(TARGET): ./boot.asm \
 	$(CC) $(CFLAGS) ./core/function/memory.c -o $(BUILD_DIR)/memory.o
 	$(CC) $(CFLAGS) ./core/function/random.c -o $(BUILD_DIR)/random.o
 	$(CC) $(CFLAGS) ./core/function/function.c -o $(BUILD_DIR)/function.o
+	$(CC) $(CFLAGS) ./core/keyboard/keyboard.c -o $(BUILD_DIR)/keyboard.o
 
 	$(LDC) $(LDFLAGS) \
 		$(BUILD_DIR)/kernel_entry.o \
@@ -67,6 +69,7 @@ $(TARGET): ./boot.asm \
 		$(BUILD_DIR)/memory.o \
 		$(BUILD_DIR)/random.o \
 		$(BUILD_DIR)/function.o \
+		$(BUILD_DIR)/keyboard.o
 		-o $(BUILD_DIR)/kernel.bin
 
 	truncate -s 16384 $(BUILD_DIR)/kernel.bin

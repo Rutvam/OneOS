@@ -2,6 +2,17 @@
 #include "function.h"
 #include "../value/global_value.h"
 
+void clear()
+{
+    for (int x = 0; x <= 1920; x++)
+    {
+        for (int y = 0; y <= 1080; y++)
+        {
+            putpixel(x, y, 0x00000000); // Noire RGB
+        }
+    }
+}
+
 // Une fonction utilitaire à mettre dans un de tes fichiers (ex: function.c)
 void itoa(int num, char* str) {
     int i = 0;
