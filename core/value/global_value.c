@@ -46,4 +46,6 @@ struct TOUCHE ALT_L = {
     .SCC_release = 0xB8
 };
 
+uint8_t screen[5][1920][1080] = {0x00};
+
 // Debut global_value.c

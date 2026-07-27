@@ -3,5 +3,7 @@
 #define GRAPHICS_H
 
 void putpixel(int x, int y, uint32_t color);
+void analizeScreen();
+void putScreen();
 
 #endif

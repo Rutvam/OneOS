@@ -6,7 +6,7 @@
 #include "./core/function/memory.h"
 #include "./core/function/function.h"
 #include "./core/keyboard/keyboard.h"
-#include "./core/graphics/graphics.h"
+#include "./graphics/graphics.h"
 
 // Une macro qui capture le fichier et la ligne automatiquement
 #define ASSERT_OR_LOG(condition, message) \
@@ -27,16 +27,16 @@ static inline void vga_set_cursor(int position)
 
 void kernel_panic(const char* message, const char* file, int line)
 {
-    int cursor = 0;
+    cursor.position = 0;
     // On efface l'écran ou on écrit directement
-    print("\n\033[31m========================================\033[0m\n");
-    print("\033[31m ! KERNEL PANIC ! \033[0m\n");
+    // print("\n\033[31m========================================\033[0m\n");
+    // print("\033[31m ! KERNEL PANIC ! \033[0m\n");
     // print("Message: %s\n", &cursor, message);
     // print("Fichier: %s\n", &cursor, file);
     // Note: Si ton 'set' ne gère pas le %d pour les entiers, 
     // tu devras convertir 'line' en chaîne de caractères d'abord.
     // print("Ligne  : %d\n", &cursor, line); 
-    print("\033[31m========================================\033[0m\n");
+    // print("\033[31m========================================\033[0m\n");
 
     // On arrête totalement le CPU pour plus que ça bouge
     __asm__ __volatile__("cli"); // Désactive les interruptions
@@ -51,14 +51,68 @@ void kernel_panic(const char* message, const char* file, int line)
 int main()
 {
     struct VBEInfo* vbe = (struct VBEInfo*) 0x9000;
-    uint32_t* fb = (uint32_t*) vbe->PhysBasePtr;
-
-    putpixel(959, 540, 0x00000000); // Noire RGB
-    putpixel(960, 540, 0x00FF5555); // Jaune RGB
-    putpixel(961, 540, 0x00FF0000); // Rouge RGB
-
+    uint32_t* fb = (uint32_t*) vbe -> PhysBasePtr;
+    
+	
     int nb_char = 0;
     char memory[300] = {0x00};
+
+	screen[0][959][539] = 1;
+	screen[1][959][539] = 0x00;
+	screen[2][959][539] = 0xFF;
+	screen[3][959][539] = 0x00;
+	screen[4][959][539] = 0x00;
+
+	screen[0][960][539] = 1;
+	screen[1][960][539] = 0x00;
+	screen[2][960][539] = 0x00;
+	screen[3][960][539] = 0xFF;
+	screen[4][960][539] = 0x00;
+	
+	screen[0][961][539] = 1;
+	screen[1][961][539] = 0x00;
+	screen[2][961][539] = 0x00;
+	screen[3][961][539] = 0x00;
+	screen[4][961][539] = 0xFF;
+
+
+	screen[0][959][540] = 1;
+	screen[1][959][540] = 0x80;
+	screen[2][959][540] = 0xFF;
+	screen[3][959][540] = 0x00;
+	screen[4][959][540] = 0x00;
+
+	screen[0][960][540] = 1;
+	screen[1][960][540] = 0x80;
+	screen[2][960][540] = 0x00;
+	screen[3][960][540] = 0xFF;
+	screen[4][960][540] = 0x00;
+
+	screen[0][961][540] = 1;
+	screen[1][961][540] = 0x80;
+	screen[2][961][540] = 0x00;
+	screen[3][961][540] = 0x00;
+	screen[4][961][540] = 0xFF;
+
+
+	screen[0][959][541] = 1;
+	screen[1][959][541] = 0xFF;
+	screen[2][959][541] = 0xFF;
+	screen[3][959][541] = 0x00;
+	screen[4][959][541] = 0x00;
+
+	screen[0][960][541] = 1;
+	screen[1][960][541] = 0xFF;
+	screen[2][960][541] = 0x00;
+	screen[3][960][541] = 0xFF;
+	screen[4][960][541] = 0x00;
+
+	screen[0][961][541] = 1;
+	screen[1][961][541] = 0xFF;
+	screen[2][961][541] = 0x00;
+	screen[3][961][541] = 0x00;
+	screen[4][961][541] = 0xFF;
+
 
     char vBig[3] = "00";
     char vMid[3] = "00";
@@ -90,7 +144,6 @@ int main()
     // 1. On prépare l'affichage
     clear();
     seed_random(7);
-    int value = randint()%5;
     //print(PROMPT);
 
     // 2. Configuration matérielle (Une seule fois !)
@@ -231,6 +284,8 @@ int main()
         }
         cursor.affiche = !cursor.affiche;
         */
+        analizeScreen();
+        putScreen();
     }
 
 

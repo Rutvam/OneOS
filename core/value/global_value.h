@@ -70,5 +70,8 @@ extern struct TOUCHE CTRL;
 extern struct TOUCHE etendue;
 extern struct TOUCHE ALT_L;
 
+
+extern uint8_t screen[5][1920][1080];
+
 #endif
 // Fin global_value.h

@@ -1,7 +1,7 @@
 #include <stdarg.h>
 #include "function.h"
 #include "../value/global_value.h"
-#include "../graphics/graphics.h"
+#include "../../graphics/graphics.h"
 
 void clear()
 {
@@ -9,9 +9,14 @@ void clear()
     {
         for (int y = 0; y <= 1080; y++)
         {
-            putpixel(x, y, 0x00000000); // Noire RGB
+            screen[0][x][y] = 1;
+            screen[1][x][y] = 0x00;
+            screen[2][x][y] = 0x00;
+            screen[3][x][y] = 0x00;
+            screen[4][x][y] = 0x00;
         }
     }
+    putScreen();
 }
 
 // Une fonction utilitaire à mettre dans un de tes fichiers (ex: function.c)
