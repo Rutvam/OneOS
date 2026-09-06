@@ -39,9 +39,10 @@ const unsigned char qwertz_german[3][128] = {
 
 volatile uint8_t last_scancode = 0;
 
-void keyboard_handler_c() {
+void keyboard_handler_c(void)
+{
     uint8_t scancode;
     __asm__ __volatile__("inb $0x60, %0" : "=a"(scancode));
     last_scancode = scancode;
-    __asm__ __volatile__("outb %%al, %%dx" : : "a"(0x20), "d"(0x20));
+    __asm__ __volatile__("outb %0, %1" : : "a"((uint8_t)0x20), "d"((uint16_t)0x20));
 }

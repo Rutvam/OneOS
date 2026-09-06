@@ -5,18 +5,22 @@
 
 void clear()
 {
-    for (int x = 0; x <= 1920; x++)
+	char* video = (char*)0xB8000;
+    for (int mini_cursor = 0; mini_cursor < 4000; mini_cursor+=2)
     {
-        for (int y = 0; y <= 1080; y++)
-        {
-            screen[0][x][y] = 1;
-            screen[1][x][y] = 0x00;
-            screen[2][x][y] = 0x00;
-            screen[3][x][y] = 0x00;
-            screen[4][x][y] = 0x00;
-        }
+		video[mini_cursor] = ' ';
+		video[mini_cursor+1] = 0x0F;
     }
-    putScreen();
+}
+
+int strcmp(const char *first_string, const char *second_string)
+{
+	while (*first_string && *second_string && *first_string == *second_string)
+	{
+		first_string++;
+		second_string++;
+	}
+	return (unsigned char)*first_string - (unsigned char)*second_string;
 }
 
 // Une fonction utilitaire à mettre dans un de tes fichiers (ex: function.c)

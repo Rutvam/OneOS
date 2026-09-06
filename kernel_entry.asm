@@ -1,59 +1,23 @@
-; Debut kernel_enty.asm
-[bits 32]
+[bits 64]
+
 section .text
-global _start     ; Rend le point d'entrée visible pour ld !
-[extern main]     ; Dit à NASM que la fonction 'main' est dans le fichier C
+
+global _start
+global keyboard_handler_asm
+
+extern main
 
 _start:
-    ; --- CONFIGURATION DES REGISTRES 32 BITS ---
-    ; 0x10 correspond à l'offset de ton segment de données dans la GDT
-    mov ax, 0x10
-    mov ds, ax
-    mov ss, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
+    mov rsp, 0x8E000
+    mov rbp, 0x8F000
 
-    ; --- INITIALISATION DE LA PILE 32 BITS ---
-    mov ebp, 0x8F000
-    mov esp, 0x8E000 ; Laisser au moins 4KB pour la pile
+    call main
 
-    mov byte [kernel_vBig], 0x4 ; 4
-    mov byte [kernel_vMid], 0x2 ; 2
-    mov byte [kernel_vLit], 0xC ;12
+.hang:
+    hlt
+    jmp .hang
 
-    ; --- LE GRAND SAUT VERS LE C ---
-    call main     ; Saute dans ton code C (kernel.c)
-    jmp $         ; Sécurité si le C s'arrête
-
-; --- GESTIONNAIRE D'INTERRUPTION POUR LE CLAVIER ---
-global keyboard_handler_asm
-extern keyboard_handler_c ; On dit que la vraie logique sera écrite en C
-extern kernel_vLit
-extern kernel_vMid
-extern kernel_vBig
 
 keyboard_handler_asm:
-    push ds
-    push es
-    push fs
-    push gs
-
-    pusha
-    cld
-
-    mov ax, 0x10
-    mov ds, ax
-    mov es, ax
-
-    call keyboard_handler_c
-
-    popa
-
-    pop gs
-    pop fs
-    pop es
-    pop ds
-
-    iret
-; Fin kernel_enty.asm
+    hlt
+    jmp keyboard_handler_asm
