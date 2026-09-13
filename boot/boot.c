@@ -2,307 +2,321 @@
 #include <efi.h>
 #include <efilib.h>
 #include <string.h>
+#include "./function.h"
 
+// Enter the kernel after UEFI Boot Services have been terminated.
+static void JumpToKernel(Elf64_Ehdr *Header, struct LOADER_PARAMS *Params)
+{
+	typedef void (*KernelEntry)(struct LOADER_PARAMS *);
+
+	KernelEntry Entry = (KernelEntry)(UINTN)Header->e_entry;
+
+	Entry(Params);
+
+	// A kernel normally never returns.
+	while (1)
+	{
+		__asm__ volatile ("hlt");
+	}
+}
+
+struct LOADER_PARAMS Params;
+
+// Main UEFI application entry point.
 EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {
 	EFI_BOOT_SERVICES *BS = SystemTable->BootServices;
 
+	EFI_STATUS status;
+
 	EFI_LOADED_IMAGE *LoadedImage = NULL;
+
 	EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *FileSystem = NULL;
 	EFI_FILE_PROTOCOL *Root = NULL;
 	EFI_FILE_PROTOCOL *KernelFile = NULL;
 
-	EFI_PHYSICAL_ADDRESS KernelAddress;
-	UINTN Pages;
-
 	EFI_FILE_INFO *FileInfo = NULL;
+
 	VOID *KernelBuffer = NULL;
 
-	EFI_STATUS status;
-	UINTN FileInfoSize = 0;
 	UINTN KernelSize;
-	UINTN ReadSize;
 
+	EFI_TIME now;
+	EFI_GRAPHICS_OUTPUT_PROTOCOL *GOP;
+
+	EFI_PHYSICAL_ADDRESS KernelAddress = 0;
+	UINTN KernelPages = 0;
+
+	EFI_MEMORY_DESCRIPTOR *MemoryMap = NULL;
+
+	UINTN MemoryMapSize = 0;
+	UINTN MapKey = 0;
+	UINTN DescriptorSize = 0;
+	UINT32 DescriptorVersion = 0;
+
+	UINT8 MaxStepNumber = 11;
+	UINT8 StepNumber = 0;
 
 	InitializeLib(ImageHandle, SystemTable);
 
 
-	/* 1. Image UEFI */
 
-	Print(L"[1/8] Chargement de l'image...\r\n");
-	status = uefi_call_wrapper(BS->OpenProtocol, 6, ImageHandle, &gEfiLoadedImageProtocolGuid, (VOID **)&LoadedImage, ImageHandle, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+	// ---------------------------------------------------------------
+	//  STEP 1: Loaded image
+	// ---------------------------------------------------------------
+	PrintStep(&StepNumber, MaxStepNumber, L"Getting loaded image information...");
+
+	status = GetLoadedImage(ImageHandle, &LoadedImage);
+
 	if (EFI_ERROR(status))
 	{
-		Print(L"      ERREUR : LoadedImage : %r\r\n", status);
-		return status;
-	}
-	
-	Print(L"      OK\r\n");
-
-	/* 2. Systeme de fichiers */
-	Print(L"[2/8] Acces au systeme de fichiers...\r\n");
-	status = uefi_call_wrapper(BS->HandleProtocol, 3, LoadedImage->DeviceHandle, &gEfiSimpleFileSystemProtocolGuid, (VOID **)&FileSystem);
-	if (EFI_ERROR(status))
-	{
-		Print(L"      ERREUR : Filesystem : %r\r\n", status);
 		return status;
 	}
 
-	Print(L"      OK\r\n");
 
-    /* 3. Volume racine */
-    Print(L"[3/8] Ouverture du volume...\r\n");
-    status = uefi_call_wrapper(FileSystem->OpenVolume, 2, FileSystem, &Root);
-    if (EFI_ERROR(status))
-    {
-        Print(L"      ERREUR : Volume : %r\r\n", status);
-        return status;
-    }
+	// ---------------------------------------------------------------
+	//  STEP 2: Current time
+	// ---------------------------------------------------------------
+	PrintStep(&StepNumber, MaxStepNumber, L"Getting current time...");
 
-    Print(L"      OK\r\n");
+	status = uefi_call_wrapper(RT->GetTime, 2, &now, NULL);
 
-    /* 4. Kernel */
-    Print(L"[4/8] Ouverture de kernel.elf...\r\n");
-    status = uefi_call_wrapper(Root->Open, 5, Root, &KernelFile, L"kernel.elf", EFI_FILE_MODE_READ, 0);
-    if (EFI_ERROR(status)) {
-        Print(L"      ERREUR : kernel.elf : %r\r\n", status);
-        return status;
-    }
+	if (EFI_ERROR(status))
+	{
+		return PrintError(L"GetTime", status);
+	}
 
-    Print(L"      OK\r\n");
+	Print(L"\t[OK] %02u/%02u/%04u %02u:%02u:%02u\r\n", now.Day, now.Month, now.Year, now.Hour, now.Minute, now.Second);
 
-    /* 5. Informations du fichier */
-    Print(L"[5/8] Lecture des informations...\r\n");
-    status = uefi_call_wrapper(KernelFile->GetInfo, 4, KernelFile, &gEfiFileInfoGuid, &FileInfoSize, NULL);
-    if (status != EFI_BUFFER_TOO_SMALL)
-    {
-        Print(L"      ERREUR : GetInfo : %r\r\n", status);
-        return status;
-    }
+	// ---------------------------------------------------------------
+	//  STEP 3: Getting FrameBuffer
+	// ---------------------------------------------------------------
+	PrintStep(&StepNumber, MaxStepNumber, L"Getting FrameBuffer");
 
-    status = uefi_call_wrapper(BS->AllocatePool, 3, EfiLoaderData, FileInfoSize, (VOID **)&FileInfo);
-    if (EFI_ERROR(status))
-    {
-        Print(L"      ERREUR : Allocation : %r\r\n", status);
-        return status;
-    }
+	status = uefi_call_wrapper(BS->LocateProtocol, 3, &gEfiGraphicsOutputProtocolGuid, NULL, (void **)&GOP);
 
-    status = uefi_call_wrapper(KernelFile->GetInfo, 4, KernelFile, &gEfiFileInfoGuid, &FileInfoSize, FileInfo);
-    if (EFI_ERROR(status)) {
-        Print(L"      ERREUR : GetInfo : %r\r\n", status);
-        uefi_call_wrapper(BS->FreePool, 1, FileInfo);
-        return status;
-    }
+	if (EFI_ERROR(status))
+	{
+		return PrintError(L"Get FrameBuffer", status);
+	}
 
-    KernelSize = FileInfo->FileSize;
-    Print(L"      Taille : %lu octets\r\n", KernelSize);
-    uefi_call_wrapper(BS->FreePool, 1, FileInfo);
-    FileInfo = NULL;
+	Print(L"\t[OK] ");
 
-    /* 6. Allocation RAM */
-    Print(L"[6/8] Allocation de %lu octets...\r\n", KernelSize);
-    status = uefi_call_wrapper(BS->AllocatePool, 3, EfiLoaderData, KernelSize, &KernelBuffer);
-    if (EFI_ERROR(status)) {
-        Print(L"      ERREUR : RAM : %r\r\n", status);
-        return status;
-    }
+	// ---------------------------------------------------------------
+	//  STEP 4: Filesystem
+	// ---------------------------------------------------------------
+	PrintStep(&StepNumber, MaxStepNumber, L"Opening filesystem...");
 
-    Print(L"      OK\r\n");
+	status = OpenFilesystem(LoadedImage, &FileSystem);
 
-    /* 7. Lecture du kernel */
-    Print(L"[7/8] Chargement du kernel...\r\n");
-    ReadSize = KernelSize;
-    status = uefi_call_wrapper(KernelFile->Read, 3, KernelFile, &ReadSize, KernelBuffer);
-    if (EFI_ERROR(status)) {
-        Print(L"      ERREUR : Lecture : %r\r\n", status);
-        uefi_call_wrapper(BS->FreePool, 1, KernelBuffer);
-        return status;
-    }
-
-    if (ReadSize != KernelSize) {
-        Print(L"      ERREUR : Lecture incomplete (%lu/%lu)\r\n", ReadSize, KernelSize);
-        uefi_call_wrapper(BS->FreePool, 1, KernelBuffer);
-        return EFI_LOAD_ERROR;
-    }
-	Print(L"      OK : %lu octets charges en RAM\r\n", ReadSize);
+	if (EFI_ERROR(status))
+	{
+		return status;
+	}
 
 
-    Print(L"[8/8] Verification du kernel...\r\n");
+	// ---------------------------------------------------------------
+	//  STEP S: Root volume
+	// ---------------------------------------------------------------
+	PrintStep(&StepNumber, MaxStepNumber, L"Opening root volume...");
+
+	status = OpenRoot(FileSystem, &Root);
+
+	if (EFI_ERROR(status))
+	{
+		return status;
+	}
+
+
+	// ---------------------------------------------------------------
+	//  STEP 6: Kernel file
+	// ---------------------------------------------------------------
+	PrintStep(&StepNumber, MaxStepNumber, L"Opening kernel.elf...");
+
+	status = OpenKernel(Root, &KernelFile);
+
+	if (EFI_ERROR(status))
+	{
+		return status;
+	}
+
+
+	/*
+	 * ---------------------------------------------------------------
+	 * STEP 6: Kernel information
+	 * ---------------------------------------------------------------
+	 */
+	PrintStep(&StepNumber, MaxStepNumber, L"Reading kernel information...");
+
+	status = GetKernelFileInfo(KernelFile, &FileInfo);
+
+	if (EFI_ERROR(status))
+	{
+		return status;
+	}
+
+	KernelSize = FileInfo->FileSize;
+
+
+	// ---------------------------------------------------------------
+	//  STEP 7: Load kernel file into UEFI pool memory
+	// ---------------------------------------------------------------
+	PrintStep(&StepNumber, MaxStepNumber, L"Allocating kernel buffer...");
+
+	status = LoadKernelFile(BS, KernelFile, KernelSize, &KernelBuffer);
+
+	if (EFI_ERROR(status))
+	{
+		return status;
+	}
+
+
+	// ---------------------------------------------------------------
+	//  STEP 8: ELF validation
+	// ---------------------------------------------------------------
+	PrintStep(&StepNumber, MaxStepNumber, L"Validating ELF kernel...");
 
 	Elf64_Ehdr *Header = (Elf64_Ehdr *)KernelBuffer;
 
-	if (Header->e_ident[EI_MAG0] != ELFMAG0 || Header->e_ident[EI_MAG1] != ELFMAG1 || Header->e_ident[EI_MAG2] != ELFMAG2 || Header->e_ident[EI_MAG3] != ELFMAG3)
+	status = ValidateELF(Header);
+
+	if (EFI_ERROR(status))
 	{
-		Print(L"      ERREUR : fichier ELF invalide\r\n");
 		uefi_call_wrapper(BS->FreePool, 1, KernelBuffer);
-		return EFI_LOAD_ERROR;
+		return status;
 	}
 
-	if (Header->e_ident[EI_CLASS] != ELFCLASS64)
+	PrintELFHeader(Header);
+
+
+	// ---------------------------------------------------------------
+	//  STEP 9: Load ELF segments
+	// ---------------------------------------------------------------
+	PrintStep(&StepNumber, MaxStepNumber, L"Loading ELF segments into kernel memory...");
+	status = LoadELFSegments(BS, Header, KernelBuffer, &KernelAddress, &KernelPages);
+
+	if (EFI_ERROR(status))
 	{
-		Print(L"      ERREUR : ELF non 64 bits\r\n");
-		uefi_call_wrapper(BS->FreePool, 1, KernelBuffer);
-		return EFI_LOAD_ERROR;
+		return status;
 	}
 
-	if (Header->e_machine != EM_X86_64)
-	{
-		Print(L"      ERREUR : architecture non x86-64\r\n");
-		uefi_call_wrapper(BS->FreePool, 1, KernelBuffer);
-		return EFI_LOAD_ERROR;
-	}
+	Print(L"\r\n[OK] Kernel segments loaded\r\n");
 
-	Print(L"      ELF64 x86-64 valide !\r\n");
 
-	Print(L"\r\n");
-	Print(L"--- ELF ---\r\n");
-	
-	Print(L"Entry      : 0x%lx\r\n", Header->e_entry);
-	Print(L"PH offset  : 0x%lx\r\n", Header->e_phoff);
-	Print(L"PH size    : %u\r\n", Header->e_phentsize);
-	Print(L"PH count   : %u\r\n", Header->e_phnum);
-	
-	Elf64_Phdr *ProgramHeaders =
-	    (Elf64_Phdr *)((UINT8 *)KernelBuffer + Header->e_phoff);
-	
-	for (UINTN i = 0; i < Header->e_phnum; i++)
-	{
-	    Elf64_Phdr *ph = &ProgramHeaders[i];
-	
-	    if (ph->p_type == PT_LOAD)
-		{
-	    	Print(L"\r\nPT_LOAD %lu\r\n", i);
-	
-	    	Print(L"  Offset : 0x%lx\r\n", ph->p_offset);
-	    	Print(L"  Vaddr  : 0x%lx\r\n", ph->p_vaddr);
-	    	Print(L"  Filesz : 0x%lx\r\n", ph->p_filesz);
-	    	Print(L"  Memsz  : 0x%lx\r\n", ph->p_memsz);
-	
-	    	/*
-	    	 * Nombre de pages necessaires
-	    	 */
-	    	Pages = (ph->p_memsz + 0xFFF) / 0x1000;
-	
-	    	KernelAddress = ph->p_vaddr;
-	
-	    	Print(L"  Pages  : %lu\r\n", Pages);
-	    	Print(L"  Adresse demandee : 0x%lx\r\n", KernelAddress);
-	
-	    	/*
-	    	 * Reservation de la memoire du segment
-	    	 */
-	    	status = uefi_call_wrapper(
-	    	    BS->AllocatePages,
-	    	    4,
-	    	    AllocateAddress,
-	    	    EfiLoaderData,
-	    	    Pages,
-	    	    &KernelAddress
-	    	);
+	// ---------------------------------------------------------------
+	//  Prepare UEFI memory map
+	// ---------------------------------------------------------------
 
-		    if (EFI_ERROR(status))
-		    {
-	    	    Print(L"  ERREUR : AllocatePages : %r\r\n", status);
-
-		        uefi_call_wrapper(BS->FreePool, 1, KernelBuffer);
-
-		        return status;
-		    }
-	
-	    	Print(L"  OK : memoire kernel reservee\r\n");
-	
-	    	/*
-	    	 * Copie de la partie presente dans le fichier ELF
-	    	 */
-	    	Print(L"  Copie du segment...\r\n");
-	
-	    	CopyMem(
-	    	    (VOID *)(UINTN)ph->p_vaddr,
-	    	    (UINT8 *)KernelBuffer + ph->p_offset,
-	    	    ph->p_filesz
-	    	);
-	
-	    	Print(L"  OK : %lu octets copies\r\n", ph->p_filesz);
-	
-	    	/*
-	    	 * Le reste du segment correspond notamment au .bss.
-	    	 * Il doit etre initialise a zero.
-	    	 */
-	    	if (ph->p_memsz > ph->p_filesz)
-	    	{
-	    	    UINTN BssSize = ph->p_memsz - ph->p_filesz;
-		
-		        Print(L"  Initialisation BSS : %lu octets\r\n", BssSize);
-	
-		        SetMem(
-		            (UINT8 *)(UINTN)(ph->p_vaddr + ph->p_filesz),
-		            BssSize,
-		            0
-		        );
-	
-		        Print(L"  OK : BSS initialise\r\n");
-		    }
-		}
-	}
-
-	Print(L"Passage au kernel\r\n");
-
-	UINTN MemoryMapSize = 0;
-	UINTN MapKey;
-	UINTN DescriptorSize;
-	UINT32 DescriptorVersion;
-	EFI_MEMORY_DESCRIPTOR *MemoryMap = NULL;
-
-	Print(L"GetMemoryMap ...\r\n");
+	Print(L"\r\nPreparing UEFI memory map...\r\n");
 
 	status = uefi_call_wrapper(BS->GetMemoryMap, 5, &MemoryMapSize, NULL, &MapKey, &DescriptorSize, &DescriptorVersion);
 
 	if (status != EFI_BUFFER_TOO_SMALL)
 	{
-		Print(L"ERREUR GetMemoryMap : %r\r\n", status);
-		return status;
+		return PrintError(L"Initial GetMemoryMap", status);
 	}
 
-	Print(L"allocation MemoryMap ...\r\n");
 
-	MemoryMapSize += 2 * DescriptorSize;
+	// Add some extra space because additional UEFI operations can
+	// change the memory map.
+	MemoryMapSize += 8 * DescriptorSize;
+
+	Print(L"\tRequired memory map buffer: %lu bytes\r\n", MemoryMapSize);
 
 	status = uefi_call_wrapper(BS->AllocatePool, 3, EfiLoaderData, MemoryMapSize, (VOID **)&MemoryMap);
 
 	if (EFI_ERROR(status))
 	{
-		Print(L"ERREUR allocation MemoryMap : %r\r\n", status);
-		return status;
+		return PrintError(L"Memory map allocation", status);
 	}
 
-	Print(L"\r\n");
+	Print(L"\t[OK] Memory map buffer allocated\r\n");
 
-	status = uefi_call_wrapper(BS->GetMemoryMap, 5, &MemoryMapSize, MemoryMap, &MapKey, &DescriptorSize, &DescriptorVersion);
-	
-	if (EFI_ERROR(status))
+
+	// ---------------------------------------------------------------
+	//  ExitBootServices()
+	// ---------------------------------------------------------------
+	while (1)
 	{
-	    Print(L"ERREUR GetMemoryMap : %r\r\n", status);
-	    return status;
+		UINTN CurrentMapSize = MemoryMapSize;
+
+		PrintStep(&StepNumber, MaxStepNumber, L"Attempting ExitBootServices()...");
+
+		// This must be the last operation that changes the memory map before ExitBootServices().
+		status = GetFinalMemoryMap(BS, MemoryMap, MemoryMapSize, &CurrentMapSize, &MapKey, &DescriptorSize, &DescriptorVersion);
+
+		if (EFI_ERROR(status))
+		{
+			return PrintError(L"Final GetMemoryMap", status);
+		}
+
+		// Build the loader parameters BEFORE ExitBootServices().
+		// No Boot Service may be called between GetMemoryMap() and ExitBootServices(), otherwise the MapKey can become invalid.
+		Params.UEFI_Version = SystemTable->Hdr.Revision;
+
+		Params.Bootloader_MajorVersion = 0;
+		Params.Bootloader_MinorVersion = 1;
+
+		Params.Memory_Map_Descriptor_Version = DescriptorVersion;
+		Params.Memory_Map_Descriptor_Size = DescriptorSize;
+		Params.Memory_Map = MemoryMap;
+		Params.Memory_Map_Size = CurrentMapSize;
+
+		Params.Kernel_BaseAddress = KernelAddress;
+		Params.Kernel_Pages = KernelPages;
+
+		Params.RTServices = SystemTable->RuntimeServices;
+		Params.FileMeta = FileInfo;
+
+		Params.ConfigTables = SystemTable->ConfigurationTable;
+		Params.Number_of_ConfigTables = SystemTable->NumberOfTableEntries;
+
+		Params.BootTime = now;
+
+		Params.GPU_Configs->FrameBuffer = GOP->Mode->FrameBufferBase;
+		Params.GPU_Configs->FrameBuffer_Size = GOP->Mode->FrameBufferSize;
+		Params.GPU_Configs->width = GOP->Mode->Info->HorizontalResolution;
+		Params.GPU_Configs->height = GOP->Mode->Info->VerticalResolution;
+		Params.GPU_Configs->pitch = GOP->Mode->Info->PixelsPerScanLine;
+
+
+		// This is the critical transition: After a successful ExitBootServices(), UEFI Boot Services are no longer available.
+		status = uefi_call_wrapper(BS->ExitBootServices, 2, ImageHandle, MapKey);
+
+
+		if (status == EFI_SUCCESS)
+		{
+			break;
+		}
+
+
+		// The memory map changed between GetMemoryMap() and ExitBootServices().
+		// We retrieve it again and retry.
+		if (status == EFI_INVALID_PARAMETER)
+		{
+			Print(L"\t[WARNING] ExitBootServices returned EFI_INVALID_PARAMETER\r\n");
+			continue;
+		}
+
+
+		return PrintError(L"ExitBootServices", status);
 	}
 
 
-	Print(L"Warning: Les fonction UEFI sera desactiver dans un instant pour donner le control entier au kernel");
-	status = uefi_call_wrapper(BS->ExitBootServices, 2, ImageHandle, MapKey);
-	
-	if (EFI_ERROR(status))
-	{
-	    // Ici il faut récupérer une nouvelle MapKey et réessayer.
-	    // Mais surtout : ne pas continuer comme si la transition avait réussi.
-	}
+	// ---------------------------------------------------------------
+	//  UEFI IS NOW GONE
+	// ---------------------------------------------------------------
+	// From this point onward:
+	// - no Print()
+	// - no AllocatePool()
+	// - no FreePool()
+	// - no GetMemoryMap()
+	// - no other UEFI Boot Services
+	// 
+	// The kernel is now responsible for the machine.
 
 
-	typedef void (*KernelEntry)(void);
-	KernelEntry Entry = (KernelEntry)(UINTN)Header->e_entry;
-	Entry();	
-
-	while (1) {
-		__asm__ volatile ("hlt");
-	}
-
+	// Jump to the ELF entry point.
+	JumpToKernel(Header, &Params);
 	return EFI_SUCCESS;
 }
