@@ -2,7 +2,7 @@
 #include "../core/idt/IDT.h"
 #include "../data/global_value.h"
 #include "../core/keyboard/keyboard.h"
-#include "../core/function/function.h"
+#include "../function/function.h"
 #include "../shutdown/main_shutdown.h"
 
 char memory[300] = {0x00};
@@ -26,14 +26,14 @@ static inline unsigned char inb (unsigned short port)
 
 int main_shell ()
 {
-	var.cursor_position = 0;
+	var.screen.cursor_position = 0;
 	int nb_char = 0;
 	char* video_memory = (char*)0xB8000;
 
 	char PROMPT[4] = {'>', '>', ' ', 0x00};
 
     // 1. On prépare l'affichage
-	my.clear();
+	my.function.clear();
     my.print.basic(PROMPT);
 	
     // 2. Configuration matérielle (Une seule fois !)
@@ -73,7 +73,7 @@ int main_shell ()
             if (var.key.ENTER.value)
 			{
                 last_scancode = 0;
-                var.cursor_position = ((var.cursor_position) / 160 + 1) * 160;
+                var.screen.cursor_position = ((var.screen.cursor_position) / 160 + 1) * 160;
 
 				if (0 == my.cmp.string(memory, var.command.shutdown)) {
 					// shutdown_function();
@@ -81,8 +81,8 @@ int main_shell ()
 				} else if (0 == my.cmp.string(memory, var.command.exit)) {
 					break;
 				} else if (0 == my.cmp.string(memory, var.command.clear)) {
-					my.clear();
-					var.cursor_position = 0;
+					my.function.clear();
+					var.screen.cursor_position = 0;
 				} else if (0 == my.cmp.string(memory, var.command.clist)) {
 					my.print.basic(var.command.clear);
 					my.print.basic("\n");
@@ -105,16 +105,16 @@ int main_shell ()
             if (var.key.DELET.value) // touche Delet
             {
                 last_scancode = 0;
-                var.cursor_position -= 2;
-                video_memory[var.cursor_position] = ' ';
-                video_memory[var.cursor_position+1] = 0x0F;
+                var.screen.cursor_position -= 2;
+                video_memory[var.screen.cursor_position] = ' ';
+                video_memory[var.screen.cursor_position+1] = 0x0F;
 
                 nb_char--;
                 memory[nb_char] = 0;
                 continue;
             }
 
-            if (var.cursor_position > 4000){
+            if (var.screen.cursor_position > 4000){
                 for (int k = 160; k < 4000; k++)
                 {
                     video_memory[k-160] = video_memory[k];
@@ -126,7 +126,7 @@ int main_shell ()
                     video_memory[k+1] = 0x0F;
                 }
 
-                var.cursor_position = 3840;
+                var.screen.cursor_position = 3840;
             } else {
                 uint8_t sc = last_scancode;
                 last_scancode = 0;
@@ -143,14 +143,14 @@ int main_shell ()
                 // Essaie de mapper vers un caractère
                 if (var.key.MAJ_L.value || var.key.MAJ_R.value) {
                     c = qwertz_german[1][sc];
-                    memory[var.cursor_position] = c;
+                    memory[var.screen.cursor_position] = c;
                 } else {
                     c = qwertz_german[0][sc];
-                    memory[var.cursor_position] = c;
+                    memory[var.screen.cursor_position] = c;
                 }
-				video_memory[var.cursor_position] = c;
-				video_memory[var.cursor_position+1] = 0x0F;
-                var.cursor_position += 2;
+				video_memory[var.screen.cursor_position] = c;
+				video_memory[var.screen.cursor_position+1] = 0x0F;
+                var.screen.cursor_position += 2;
                 memory[nb_char] = c;
                 nb_char++;
             }

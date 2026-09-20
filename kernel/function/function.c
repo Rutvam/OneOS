@@ -1,189 +1,32 @@
-#include <stdarg.h>
-#include <stdarg.h>
 #include <efi.h>
-#include "function.h"
-#include "../../data/global_value.h"
-#include "../../graphics/graphics.h"
-/*
-void selection (uint8_t value, int place)
+#include "./function.h"
+#include "./random.h"
+#include "./math.h"
+#include "./print_function.h"
+#include "./graphics/graphics.h"
+#include "../data/global_value.h"
+#include "../data/graphics_value/police.h"
+
+void scroll_video(void)
 {
-	char* video = (char*)0xB8000;
-	switch (value)
-	{
-		case 1:
-			video[place] = '>';
-			// screen[0][40][2] = '>';
-			video[place + 1] = 0x02;
-			// screen[1][40][2] = 0x0F;
-			break;
-		case 0:
-			video[place] = ' ';
-			video[place + 1] = 0x02;
-			break;
-		default:
-			video[place] = '?';
-			video[place + 1] = 0x02;
-			break;
-	}
+    for (int k = 160; k < 4000; k++)
+        var.screen.VB[k - 160] = var.screen.VB[k];
+
+    for (int k = 3840; k < 4000; k += 2)
+    {
+        var.screen.VB[k] = ' ';
+        var.screen.VB[k + 1] = 0x0F;
+    }
+
+    var.screen.cursor_position = 3840;
 }
 
-void save_screen ()
-{
-	char* video = (char*)0xB8000;
-	for (int x = 0; x < 80; x++)
-	{
-		for(int y = 0; y < 25; y++)
-		{
-			screen[0][x][y] = video[x * 2 + y * 160];
-			screen[1][x][y] = video[1+(x * 2 + y * 160)];
-		}
-	}
-}
-
-void refrech_screen ()
-{
-	char* video = (char*)0xB8000;
-	selection(pong.value, 522);
-	selection(shell.value, 682);
-	selection(shutdown.value, 842);
-	for (int x = 0; x < 80; x++)
-	{
-		for(int y = 0; y < 25; y++)
-		{
-			if (screen[0][x][y] != video[x * 2 + y * 160])
-			{
-				video[x * 2 + y * 160] = screen[0][x][y];
-			}
-			
-			if (screen[1][x][y] != video[(x * 2 + y * 160)+1])
-			{
-				video[1+(x * 2 + y * 160)] = screen[1][x][y];
-			}
-		}
-	}
-
-	save_screen();
-}
-
-void print_main_menu ()
-{
-	my.clear();
-
-	pong.name[0] = 'P';
-	pong.name[1] = 'O';
-	pong.name[2] = 'N';
-	pong.name[3] = 'G';
-	pong.name[4] = 0x00;
-
-	shell.name[0] = 'S';
-	shell.name[1] = 'H';
-	shell.name[2] = 'E';
-	shell.name[3] = 'L';
-	shell.name[4] = 'L';
-	shell.name[5] = 0x00;
-
-	shutdown.name[0] = 's';
-	shutdown.name[1] = 'h';
-	shutdown.name[2] = 'u';
-	shutdown.name[3] = 't';
-	shutdown.name[4] = 'd';
-	shutdown.name[5] = 'o';
-	shutdown.name[6] = 'w';
-	shutdown.name[7] = 'n';
-	shutdown.name[8] = 0x00;
-	char title[12] = "GAMEBOY OS";
-
-	int j = 0;
-	for (int i = 384; title[j] != 0x00; i += 2)
-	{
-		video[i + 4] = title[j];
-		video[i + 5] = 0x02;
-		j++;
-	}
-
-	video[198] = 0xC9; // coins superieur gauche
-	video[199] = 0x02;
-
-	video[280] = 0xBB; // coins superieur droite
-	video[281] = 0x02;
-
-	// screen[0][19][1] = 0xC9;
-	// screen[1][19][1] = 0x0F;
-
-	// screen[0][60][1] = 0xBB;
-	// screen[1][60][1] = 0x0F;
-
-	for (int i = 200; i < 280; i += 2)
-	{
-		video[i] = 0xCD; // bordure superieur
-		video[i+1] = 0x02;
-	}
-
-	for (int i = 1; i < 22; i++)
-	{
-		video[280 + (160 * i)] = 0xBA; // bordure droit
-		video[281 + (160 * i)] = 0x02;
-	}
-
-	for (int i = 1; i < 22; i++)
-	{
-		video[198 + (160 * i)] = 0xBA; // bordure gauche
-		video[199 + (160 * i)] = 0x02;
-	}
-
-	video[3718] = 0xC8;
-	video[3719] = 0x02;
-
-	for (int i = 3720; i < 3800; i += 2)
-	{
-		video[i] = 0xCD;
-		video[i + 1] = 0x02;
-	}
-
-	video[3800] = 0xBC;
-	video[3801] = 0x02;
-	selection(pong.value, 522);
-	j = 0;
-	for (int i = 522; pong.name[j] != 0x00; i += 2)
-	{
-		video[i + 4] = pong.name[j];
-		video[i + 5] = 0x02;
-		j++;
-	}
-
-	selection(shell.value, 682);
-	j = 0;
-	for (int i = 682; shell.name[j] != 0x00; i += 2)
-	{
-		video[i + 4] = shell.name[j];
-		video[i + 5] = 0x02;
-		j++;
-	}
-
-	selection(shutdown.value, 842);
-
-	j = 0;
-	for (int i = 842; shutdown.name[j] != 0x00; i += 2)
-	{
-		video[i + 4] = shutdown.name[j];
-		video[i + 5] = 0x02;
-		j++;
-	}
-	
-
-	// refrech_screen();
-	save_screen();
-}
-*/
-
-extern void outb (unsigned short port, unsigned char value);
-
-void clear()
+void clear(void)
 {
 	my.print.outb("\033[2J\033[H");
-	for (int i = 0; i < (int)var.gpu.FBSize; i++)
+	for (int i = 0; i < var.screen.FBSize; i++)
 	{
-		var.gpu.FB[i] = 0x000000;
+		var.screen.FB[i] = 0x000000;
 	}
 	return;
 }
@@ -211,89 +54,27 @@ int key(uint8_t value, uint8_t SCC_press, uint8_t SCC_release, uint8_t need_ethe
 	return value;
 }
 
-void print(const char* text)
+
+
+int time(void)
 {
-	my.print.outb(text);
-//     char* video = (char*)0xB8000;
-//     int j = 0;
-// 
-//     while (text[j] != 0 && cursor.position < 4000)
-//     {
-//         if (text[j] == '\n') {
-//             cursor.position = ((cursor.position) / 160 + 1) * 160;
-//             j++;
-//             continue;
-//         }
-// 
-//         video[cursor.position] = text[j];
-//         video[cursor.position + 1] = 0x0F;   // blanc sur noir
-//         cursor.position += 2;
-//         j++;
-//         
-//         if (cursor.position >= 3999)
-//         {
-//         	for (int k = 160; k <= 3999; k++)
-//         	{
-//         		video[k-160] = video[k];
-//         	}
-// 
-//         	for (int k = 3840; k < 3999; k += 2)
-//         	{
-//         		video[k] = ' ';
-//         		video[k+1] = 0x0F;
-//         	}
-// 
-//         	cursor.position = 3840;
-// 		}
-// 	}
-	return;
+	var.params->RTServices->GetTime(&var.params->BootTime, NULL);
+	my.init.time();
+	return var.time.second * my.math.pow(60, 0) + var.time.minute * my.math.pow(60, 1) + var.time.hour * my.math.pow(60, 2);
 }
 
-void print_outb(const char *text, ...)
+void init_time()
 {
-	va_list args;
-	va_start(args, text);
-
-	for (int i = 0; text[i] != 0x00; i++)
-	{
-		if (text[i] == '%' && text[i + 1] == 'c') {
-			char caracter = va_arg(args, char);
-			my.outb(0x3F8, caracter);
-			i++;
-		} else if (text[i] == '%' && text[i + 1] == 'd') {
-			int value = va_arg(args, int);
-			char caracter;
-			if (value > 10) {caracter = value + '0';}
-			my.outb(0x3F8, caracter);
-			i++;
-		} else if (text[i] == '%' && text[i + 1] == 's') {
-			char *string = va_arg(args, char *);
-			my.print.outb(string);
-			i++;
-		} else if (text[i] == '%' && text[i + 1] == 'h') {
-			int value = va_arg(args, int);
-			char hex[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-			char caracter = hex[value];
-			my.outb(0x3F8, caracter);
-			i++;
-		} else {
-			my.outb(0x3F8, text[i]);
-		}
-	}
-
-	va_end(args);
-	return;
+	var.time.day = var.params->BootTime.Day;
+	var.time.hour = var.params->BootTime.Hour;
+	var.time.year = var.params->BootTime.Year;
+	var.time.month = var.params->BootTime.Month;
+	var.time.minute = var.params->BootTime.Minute;
+	var.time.second = var.params->BootTime.Second;
 }
 
-void NO_print(const char *text, ...)
+void init_var()
 {
-	(void)text;
-	return;
-}
-
-void init_var(UINT64 framebuffer_base)
-{
-	var.gpu.FB = (uint32_t *)(uintptr_t)framebuffer_base;
 	var.key.TAB.value = 0;
 	var.key.TAB.SCC_press = 0x0F;
 	var.key.TAB.SCC_release = 0x8F;
@@ -355,31 +136,74 @@ void init_var(UINT64 framebuffer_base)
 	var.knopf.shell.value = 1;
 	var.knopf.shutdown.name = "Shutdown";
 	var.knopf.shutdown.value = 0;
+	var.screen.FB = (uint32_t *)(uintptr_t)var.params->GPU_Configs->FrameBuffer;
+	var.screen.police = police;
+	var.screen.caracter_width = 8;
+	var.screen.caracter_height = 12;
+	var.screen.FBWidth = (int)var.params->GPU_Configs->width;
+	var.screen.FBHeight = (int)var.params->GPU_Configs->height;
+	var.screen.FBSize = (int)var.params->GPU_Configs->FrameBuffer_Size;
+	var.screen.FBPitch = (int)var.params->GPU_Configs->pitch;
+	var.screen.VBWidth = var.screen.FBWidth / var.screen.caracter_width * 2;
+	var.screen.VBHeight = var.screen.FBHeight / var.screen.caracter_height;
+	var.screen.VBSize = var.screen.VBWidth * var.screen.VBHeight;
+	var.screen.pixel_position = 0;
+	var.screen.cursor_position = 0;
 	var.command.shutdown = "shutdown";
 	var.command.exit = "exit";
 	var.command.clear = "clear";
 	var.command.clist = "clist";
 	var.ethendu.value = 0;
 	var.ethendu.SCC_prefix = 0xE0;
-	var.cursor_position = 0;
+	my.init.time();
+
+	int reference_point[var.screen.VBSize/2];
+	
+	for (int i = 0; i < (var.screen.VBSize / 2); i++)
+	{
+		for (int j = i; j < var.screen.VBWidth/2; j++)
+		{
+			var.screen.RP[j] = j*var.screen.caracter_width;
+			i++;
+		}
+		for (int j = i; j < var.screen.VBWidth*var.screen.caracter_height; j++) {i++;}
+	}
+	var.screen.RP = reference_point;
+	my.print.outb("Manual RP checking ...\r\n");
+	for (int i = 0; i < 20; i++)
+	{
+		my.print.outb("\tRP[%d] = %d\r\n\treference_point[%d] = %d\r\n", i, var.screen.RP[i], i, reference_point);
+		if (var.screen.RP[i] != reference_point[i])
+		{
+			var.status.value = i+1;
+			var.status.msg = "RP[] n'a pas reussi a copier la valeur de reference_point[].";
+			my.print.outb("ERROR %d: %s\r\n", var.status.value, var.status.msg);
+		}
+	}
 }
 
 struct MY_FUNCTION my;
 
 void init_function(int is_qemu)
 {
-	my.init.var = init_var;
-	my.clear = clear;
+	my.init.time = init_time;
 	my.outb = outb;
-	my.cmp.string = string;
 	my.cmp.key = key;
+	my.cmp.string = string;
+	my.math.pow = pow;
+	my.init.var = init_var;
 	my.print.basic = print;
+	my.random.randint = randint;
 	my.screen.analyse = screen_analyze;
+	my.function.time = time;
+	my.function.clear = clear;
+	my.function.scroll = scroll_video;
 	if (is_qemu) {
 		my.print.outb = print_outb;
 	} else {
 		my.print.outb = NO_print;
 	}
+	seed_random(my.function.time());
 	return;
 }
 

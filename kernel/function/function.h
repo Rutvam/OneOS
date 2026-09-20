@@ -7,8 +7,15 @@
 
 struct PRINT_FUNCTION
 {
-	void (*basic)(const char *text);
+	void (*basic)(const char *text, ...);
 	void (*outb)(const char *text, ...);
+};
+
+struct FUNCTION
+{
+	void (*scroll)(void);
+	void (*clear)(void);
+	int (*time)(void);
 };
 
 struct CMP_FUNCTION
@@ -20,7 +27,18 @@ struct CMP_FUNCTION
 struct INIT
 {
 	void (*function)(int is_qemu);
-	void (*var)(UINT64 framebuffer_base);
+	void (*var)(void);
+	void (*time)(void);
+};
+
+struct RANDOM_FUNCTION
+{
+	int (*randint)(int min, int max);
+};
+
+struct MATH_FUNCTION
+{
+	int (*pow)(int base, int exposant);
 };
 
 struct SCREEN_FUNCTION
@@ -30,11 +48,13 @@ struct SCREEN_FUNCTION
 
 struct MY_FUNCTION
 {
-	struct PRINT_FUNCTION print;
-	struct CMP_FUNCTION cmp;
 	struct INIT init;
+	struct FUNCTION function;
+	struct CMP_FUNCTION cmp;
+	struct MATH_FUNCTION math;
+	struct PRINT_FUNCTION print;
 	struct SCREEN_FUNCTION screen;
-	void (*clear)(void);
+	struct RANDOM_FUNCTION random;
 	void (*outb)(unsigned short port, unsigned char value);
 };
 

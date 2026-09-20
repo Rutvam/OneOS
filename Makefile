@@ -3,18 +3,20 @@ CFLAGS_KERNEL = -m64 -ffreestanding -fno-stack-protector -I/usr/include/efi -I/u
 NASMFLAGS_KERNEL = -f elf64
 LDFLAGS_KERNEL = -n -T
 KERNEL_OBJ = $(BUILD_KERNEL)/main.o\
-	$(BUILD_KERNEL)/function.o\
+	$(BUILD_KERNEL)/IDT.o \
 	$(BUILD_KERNEL)/math.o\
 	$(BUILD_KERNEL)/memory.o\
+	$(BUILD_KERNEL)/police.o\
 	$(BUILD_KERNEL)/random.o\
-	$(BUILD_KERNEL)/IDT.o \
+	$(BUILD_KERNEL)/function.o\
 	$(BUILD_KERNEL)/keyboard.o\
-	$(BUILD_KERNEL)/global_value.o\
 	$(BUILD_KERNEL)/graphics.o\
+	$(BUILD_KERNEL)/global_value.o\
+	$(BUILD_KERNEL)/kernel_entry.o \
+	$(BUILD_KERNEL)/print_function.o\
 	$(BUILD_KERNEL)/pong/main_pong.o\
 	$(BUILD_KERNEL)/shell/main_shell.o\
 	$(BUILD_KERNEL)/shutdown/main_shutdown.o\
-	$(BUILD_KERNEL)/kernel_entry.o
 
 
 BUILD_BOOT = ./compile/boot
@@ -60,9 +62,11 @@ KERNEL: ./kernel/main.c \
 	./kernel/function/math.c \
 	./kernel/function/memory.c \
 	./kernel/function/random.c \
+	./kernel/function/print_function.c \
 	./kernel/core/idt/IDT.c \
 	./kernel/core/keyboard/keyboard.c \
 	./kernel/data/global_value.c \
+	./kernel/data/graphics_value/police.c \
 	./kernel/function/graphics/graphics.c \
 	./kernel/pong/main_pong.c \
 	./kernel/shell/main_shell.c \
@@ -77,17 +81,19 @@ KERNEL: ./kernel/main.c \
 	gcc $(CFLAGS_KERNEL) ./kernel/function/math.c              -o $(BUILD_KERNEL)/math.o
 	gcc $(CFLAGS_KERNEL) ./kernel/function/memory.c            -o $(BUILD_KERNEL)/memory.o
 	gcc $(CFLAGS_KERNEL) ./kernel/function/random.c            -o $(BUILD_KERNEL)/random.o
+	gcc $(CFLAGS_KERNEL) ./kernel/function/print_function.c    -o $(BUILD_KERNEL)/print_function.o
 	gcc $(CFLAGS_KERNEL) ./kernel/core/idt/IDT.c               -o $(BUILD_KERNEL)/IDT.o
 	gcc $(CFLAGS_KERNEL) ./kernel/core/keyboard/keyboard.c     -o $(BUILD_KERNEL)/keyboard.o
 	gcc $(CFLAGS_KERNEL) ./kernel/data/global_value.c          -o $(BUILD_KERNEL)/global_value.o
+	gcc $(CFLAGS_KERNEL) ./kernel/data/graphics_value/police.c -o $(BUILD_KERNEL)/police.o
 	gcc $(CFLAGS_KERNEL) ./kernel/function/graphics/graphics.c -o $(BUILD_KERNEL)/graphics.o
 	gcc $(CFLAGS_KERNEL) ./kernel/pong/main_pong.c             -o $(BUILD_KERNEL)/pong/main_pong.o
 	gcc $(CFLAGS_KERNEL) ./kernel/shell/main_shell.c           -o $(BUILD_KERNEL)/shell/main_shell.o
 	gcc $(CFLAGS_KERNEL) ./kernel/shutdown/main_shutdown.c     -o $(BUILD_KERNEL)/shutdown/main_shutdown.o
 
-	nasm $(NASMFLAGS_KERNEL) ./kernel_entry.asm -o $(BUILD_KERNEL)/kernel_entry.o
+	nasm $(NASMFLAGS_KERNEL) ./kernel/kernel_entry.asm -o $(BUILD_KERNEL)/kernel_entry.o
 
-	ld $(LDFLAGS_KERNEL) linker.ld -o $(BUILD_KERNEL)/kernel.elf $(KERNEL_OBJ)
+	ld $(LDFLAGS_KERNEL) ./kernel/linker.ld -o $(BUILD_KERNEL)/kernel.elf $(KERNEL_OBJ)
 
 	rm -rf $(KERNEL_OBJ)
 	rmdir $(BUILD_KERNEL)/pong

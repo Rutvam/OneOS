@@ -2,6 +2,7 @@
 #define RANDOM_H
 
 void seed_random(unsigned int seed);
-int randint(void);
+int rand();
+int randint(int min, int max);
 
 #endif

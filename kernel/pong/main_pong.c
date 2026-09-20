@@ -2,7 +2,7 @@
 #include "../core/idt/IDT.h"
 #include "../data/global_value.h"
 #include "../core/keyboard/keyboard.h"
-#include "../core/function/function.h"
+#include "../function/function.h"
 
 uint8_t map[25][80] = {0};
 
@@ -79,7 +79,7 @@ int main_pong ()
 	char* video_memory = (char*)0xB8000;
 
 	// 1. On prépare l'affichage
-	my.clear();
+	my.function.clear();
 	
 	// 2. Configuration matérielle (Une seule fois !)
 	pic_remap();
@@ -100,7 +100,7 @@ int main_pong ()
 				continue;
 			}
 
-            if (var.cursor_position > 4000){
+            if (var.screen.cursor_position > 4000){
                 for (int k = 160; k < 4000; k++)
                 {
                     video_memory[k-160] = video_memory[k];
@@ -112,7 +112,7 @@ int main_pong ()
                     video_memory[k+1] = 0x0F;
                 }
 
-                var.cursor_position = 3840;
+                var.screen.cursor_position = 3840;
             } else {
                 uint8_t sc = last_scancode;
                 last_scancode = 0;
