@@ -14,7 +14,8 @@ void screen_analyze(void)
 			{
 				if (var.screen.police[ var.screen.VB[ var.screen.cursor_position ]-1 ][y][x])
 				{
-					var.screen.pixel_position = var.screen.RP[ j ] + y * var.screen.FBPitch + x;
+					int temp = j * 8;
+					var.screen.pixel_position = temp + (y * var.screen.FBPitch + x);
 					var.screen.FB[ var.screen.pixel_position ] = var.screen.VB[ var.screen.cursor_position+1 ];
 				}
 			}
