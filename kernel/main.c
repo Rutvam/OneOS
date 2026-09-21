@@ -14,22 +14,29 @@
 // Dans kernel.c
 int main(struct LOADER_PARAMS *params)
 {
-	// safe params
-	var.params = params;
-	my.init.function = init_function;
-	my.print.outb("[ ... ] Init all function in struct my.");
-	my.init.function(1); // 1 = yes, it is with QEMU; 0 = No, it's not with QEMU
-	my.print.outb("[ OK ] Init all function in struct my.");
-	my.print.outb("[ ... ] Init all variable.");
-	my.init.var();
-	my.function.clear();
 	my.print.outb("[ OK ] Main\r\n");
+	
 	if (params == 0)
 	{
 		my.print.outb("[ X ] Params\r\n");
 		while (1);
 	}
+	var.params = params; // save params
+	if (var.params == 0)
+	{
+		my.print.outb("[ X ] Init Params\r\n");
+		while (1);
+	}
 	my.print.outb("[ OK ] Params\r\n");
+
+	my.init.function = init_function; // init the init function.
+	my.init.function(1); // 1 = yes, it is with QEMU; 0 = No, it's not with QEMU
+	my.print.outb("[ OK ] Init all function in struct my.");
+
+	my.init.var();
+	my.print("[ OK ] Init all variable in struct var.");
+
+
 	my.print.outb("FrameBuffer size: %d\r\n", var.params->GPU_Configs->FrameBuffer_Size);
 	my.print.outb("UEFI version: %h\r\n", params->UEFI_Version);
 	my.print.outb("Bootloader version: %d.%d\r\n", params->Bootloader_MajorVersion, params->Bootloader_MinorVersion);
