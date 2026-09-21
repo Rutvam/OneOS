@@ -156,30 +156,6 @@ void init_var()
 	var.ethendu.value = 0;
 	var.ethendu.SCC_prefix = 0xE0;
 	my.init.time();
-
-	int reference_point[var.screen.VBSize/2];
-	
-	for (int i = 0; i < (var.screen.VBSize / 2); i++)
-	{
-		for (int j = i; j < var.screen.VBWidth/2; j++)
-		{
-			var.screen.RP[j] = j*var.screen.caracter_width;
-			i++;
-		}
-		for (int j = i; j < var.screen.VBWidth*var.screen.caracter_height; j++) {i++;}
-	}
-	var.screen.RP = reference_point;
-	my.print.outb("Manual RP checking ...\r\n");
-	for (int i = 0; i < 20; i++)
-	{
-		my.print.outb("\tRP[%d] = %d\r\n\treference_point[%d] = %d\r\n", i, var.screen.RP[i], i, reference_point);
-		if (var.screen.RP[i] != reference_point[i])
-		{
-			var.status.value = i+1;
-			var.status.msg = "RP[] n'a pas reussi a copier la valeur de reference_point[].";
-			my.print.outb("ERROR %d: %s\r\n", var.status.value, var.status.msg);
-		}
-	}
 }
 
 struct MY_FUNCTION my;
