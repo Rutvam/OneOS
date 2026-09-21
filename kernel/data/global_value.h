@@ -101,7 +101,6 @@ struct SCREEN_VALUE
 	int FBSize; // Frame Buffer Size
 	int FBPitch;
 	uint32_t *FB;
-	int *RP;
 	int caracter_width;
 	int caracter_height;
 	uint32_t (*police)[12][8];
